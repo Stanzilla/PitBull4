@@ -327,6 +327,19 @@ function UnitFrame__scripts:OnAttributeChanged(key, value)
 		if new_unit then
 			PitBull4.unit_id_to_frames[new_unit][self] = true
 			PitBull4.unit_id_to_frames_with_wacky[new_unit][self] = true
+			local is_wacky = PitBull4.Utils.IsWackyUnitGroup(new_unit)
+			self.is_wacky = is_wacky
+			if is_wacky then
+				PitBull4.wacky_frames[self] = true
+				PitBull4.num_wacky_frames = PitBull4.num_wacky_frames + 1
+				PitBull4.non_wacky_frames[self] = nil
+			else
+				if PitBull4.wacky_frames[self] then
+					PitBull4.num_wacky_frames = PitBull4.num_wacky_frames - 1
+					PitBull4.wacky_frames[self] = nil
+				end
+				PitBull4.non_wacky_frames[self] = true
+			end
 			guid = UnitGUID(new_unit)
 		end
 
