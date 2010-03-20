@@ -2,7 +2,7 @@ local _G = _G
 local PitBull4 = _G.PitBull4
 local L = PitBull4.L
 
-local CURRENT_UNIT = "player"
+local CURRENT_UNIT = L["Player"] 
 local CURRENT_GROUP = L["Party"] 
 
 function PitBull4.Options.get_unit_options()
@@ -41,23 +41,56 @@ function PitBull4.Options.get_unit_options()
 	local deep_copy = PitBull4.Utils.deep_copy
 	
 	unit_options.args.current_unit = {
-		name = L["Current unit"],
-		desc = L["Change the unit you are currently editing."],
+		name = L["Current unit frame"],
+		desc = L["Change the unit frame you are currently editing."],
 		type = 'select',
 		order = 1,
 		values = function(info)
 			local t = {}
-			for _, name in ipairs(PitBull4.SINGLETON_CLASSIFICATIONS) do
-				t[name] = PitBull4.Utils.GetLocalizedClassification(name) .. (PitBull4.Utils.IsWackyUnitGroup(name) and "*" or "")
+			for name in pairs(PitBull4.db.profile.units) do
+				t[name] = name
 			end
 			return t
 		end,
 		get = function(info)
+			local units = PitBull4.db.profile.units
+			if not rawget(units, CURRENT_UNIT) then
+				CURRENT_UNIT = next(units)
+			end
 			return CURRENT_UNIT
 		end,
 		set = function(info, value)
 			CURRENT_UNIT = value
 		end
+	}
+
+	local function validate_unit(info, value)
+		if value:len() < 3 then
+			return L["Must be at least  characters long."]
+		end
+		if rawget(PitBull4.db.profile.units, value) then
+			return L["Must be unique."]
+		end
+		return true
+	end
+
+	unit_options.args.new_unit= {
+		name = L["New unit frame"],
+		desc = L["Create a new unit frame. This will copy the data of the currently-selected unit frame."],
+		type = 'input',
+		order = 2,
+		get = function(info) return "" end,
+		set = function(info, value)
+			PitBull4.db.profile.units[value] = deep_copy(PitBull4.db.profile.units[CURRENT_UNIT])
+			
+			CURRENT_UNIT = value
+			
+			if get_unit_db().enabled then
+				PitBull4:MakeSingletonFrame(CURRENT_UNIT)
+				PitBull4:RecheckConfigMode()
+			end
+		end,
+		validate = validate_unit,
 	}
 	
 	group_options.args.current_group = {
@@ -205,7 +238,7 @@ function PitBull4.Options.get_unit_options()
 	
 	unit_args.enable = {
 		name = L["Enable"],
-		desc = L["Enable this unit."],
+		desc = L["Enable this unit frame."],
 		type = 'toggle',
 		order = next_order(),
 		get = function(info)
@@ -232,6 +265,30 @@ function PitBull4.Options.get_unit_options()
 		disabled = disabled,
 	}
 	
+	unit_args.remove = {
+		name = L["Remove"],
+		desc = L["Remove this unit frame.  Note: there is no way to recover after removal."],
+		confirm = true,
+		order = next_order(),
+		type = 'execute',
+		func = function(info)
+			get_unit_db().enabled = false
+
+			for frame in PitBull4:IterateFramesForClassification(CURRENT_UNIT, true) do
+				frame:Deactivate()
+			end
+
+			PitBull4.db.profile.units[CURRENT_UNIT] = nil
+
+			PitBull4:RecheckConfigMode()
+		end,
+		disabled = function(info)
+			if next(PitBull4.db.profile.units) == CURRENT_UNIT and not next(PitBull4.db.profile.units, CURRENT_UNIT) then
+				return true
+			end
+		end,
+	}
+
 	group_args.enable = {
 		name = L["Enable"],
 		desc = L["Enable this unit group."],
@@ -329,6 +386,28 @@ function PitBull4.Options.get_unit_options()
 			refresh_vehicle(info[1])
 		end
 	end
+
+	unit_args.name = {
+		name = L["Name"],
+		desc = function(info)
+			return L["Rename the '%s' unit frame."]:format(CURRENT_UNIT)
+		end,
+		type = 'input',
+		order = next_order(),
+		get = function(info)
+			return CURRENT_UNIT
+		end,
+		set = function(info, value)
+			PitBull4.db.profile.units[value], PitBull4.db.profile.units[CURRENT_UNIT] = PitBull4.db.profile.units[CURRENT_UNIT], nil
+			local old_name = CURRENT_UNIT
+			CURRENT_UNIT = value
+
+			for frame in PitBull4:IterateFramesForClassification(old_name, true) do
+				frame:Rename(CURRENT_UNIT)
+			end
+		end,
+		validate = validate_unit,
+	}
 	
 	group_args.name = {
 		name = L["Name"],
@@ -350,6 +429,24 @@ function PitBull4.Options.get_unit_options()
 			end
 		end,
 		validate = validate_group,
+	}
+
+	unit_args.unit = {
+		name = L["Unit"],
+		desc = L["Which unit this frame should show."],
+		type = 'select',
+		order = next_order(),
+		values = function(info)
+			local t = {}
+			for _, name in ipairs(PitBull4.SINGLETON_CLASSIFICATIONS) do
+				t[name] = PitBull4.Utils.GetLocalizedClassification(name) .. (PitBull4.Utils.IsWackyUnitGroup(name) and "*" or "")
+			end
+			return t
+		end,
+		get = get,
+		set = set_with_update,
+		disabled = disabled,
+		width = 'double',
 	}
 	
 	group_args.unit_group = {

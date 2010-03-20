@@ -95,15 +95,6 @@ local DATABASE_DEFAULTS = {
 				click_through = false,
 				tooltip = 'always',
 			},
-			player = { enabled = true },
-			pet = { enabled = true },
-			pettarget = { enabled = true },
-			target = { enabled = true },
-			targettarget = { enabled = true },
-			targettargettarget = { enabled = true },
-			focus = { enabled = true },
-			focustarget = { enabled = true },
-			focustargettarget = { enabled = true },
 		},
 		groups = {
 			['**'] = {
@@ -213,6 +204,43 @@ local DEFAULT_GROUPS = {
 		unit_group = "partypet",
 	},
 }
+
+local DEFAULT_UNITS =  {
+	[L["Player"]] = {
+		enabled = true,
+		unit = "player",
+	},
+	[L["Player's pet"]] = {
+		enabled = true,
+		unit = "pet"
+	},
+	[format(L["%s's target"],L["Player's pet"])]= {
+		unit = "pettarget"
+	},
+	[L["Target"]] = {
+		enabled = true,
+		unit = "target"
+	},
+	[format(L["%s's target"],L["Target"])] = {
+		enabled = true,
+		unit = "targettarget"
+	},
+	[format(L["%s's target"],format(L["%s's target"],L["Target"]))] = {
+		unit = "targettargettarget"
+	},
+	[L["Focus"]] = {
+		enabled = true,
+		unit = "focus"
+	},
+	[format(L["%s's target"],L["Focus"])]= {
+		unit = "focustarget"
+	},
+	[format(L["%s's target"],format(L["%s's target"],L["Focus"]))] = {
+		unit = "focustargettarget"
+	},
+}
+
+
 -----------------------------------------------------------------------------
 
 local _G = _G
@@ -947,7 +975,45 @@ function PitBull4.OnTanksUpdated()
 	end
 end
 
+-- Convert the old units table to the new format.  Prior to this we could
+-- only have one unit frame per unit for singelton frames.  Now we can have
+-- as many as we want.  However, we can't use the unit id as the key now so
+-- migrate the old units to their localized names as keys and set their unit
+-- id as the unit key.
+local function migrate_to_new_units_db()
+	local profiles = PitBull4DB and PitBull4DB.profiles
+	if not profiles then return end
+	local tmp = {}
+	for _,profile in pairs(profiles) do
+		if not profile.made_units then -- Old profile
+			profile.made_units = true
+			local units = profile and profile.units
+			if units then
+				-- Copy the units to a tmp table
+				for unit, data in pairs(units) do
+					tmp[unit] = data	
+				end
+				-- Clear the units table so...
+				wipe(units)
+				-- We can rebuild it with the new setup.
+				for unit, data in pairs(tmp) do
+					units[PitBull4.Utils.GetLocalizedClassification(unit)] = data
+					data.unit = unit
+					if data.enabled == nil then
+						-- enabled was default so set it explitly since the default for
+						-- some units is disabled now.
+						data.enabled = true
+					end
+				end
+				wipe(tmp)
+			end
+		end
+	end
+end
+
 function PitBull4:OnInitialize()
+	migrate_to_new_units_db()
+
 	db = LibStub("AceDB-3.0"):New("PitBull4DB", DATABASE_DEFAULTS, 'Default')
 	DATABASE_DEFAULTS = nil
 	self.db = db
@@ -1180,6 +1246,14 @@ function PitBull4:OnProfileChanged()
 			merge_onto(group_db, data)
 		end
 	end
+
+	if not db.profile.made_units then
+		db.profile.made_units = true
+		for name, data in pairs(DEFAULT_UNITS) do
+			local unit_db = db.profile.units[name]
+			merge_onto(unit_db, data)
+		end
+	end
 	
 	for header in PitBull4:IterateHeaders(true) do
 		local group_db = rawget(db.profile.groups, header.name)
@@ -1204,11 +1278,11 @@ function PitBull4:OnProfileChanged()
 	end
 
 	-- Make sure all frames and groups are made
-	for unit, unit_db in pairs(db.profile.units) do
-		if unit_db.enabled then
-			self:MakeSingletonFrame(unit)
+	for singleton, singleton_db in pairs(db.profile.units) do
+		if singleton_db.enabled then
+			self:MakeSingletonFrame(singleton)
 		else
-			for frame in PitBull4:IterateFramesForClassification(unit, true) do
+			for frame in PitBull4:IterateFramesForClassification(singleton, true) do
 				frame:Deactivate()
 			end
 		end

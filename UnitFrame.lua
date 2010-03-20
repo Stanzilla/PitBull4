@@ -39,20 +39,27 @@ UnitPopupButtons["PB4_CLEAR_FOCUS"] = {
 }
 
 --- Make a singleton unit frame.
--- @param unit the UnitID of the frame in question
--- @usage local frame = PitBull4:MakeSingletonFrame("player")
-function PitBull4:MakeSingletonFrame(unit)
+-- @param classification the classification of the Unit Frame 
+-- @usage local frame = PitBull4:MakeSingletonFrame("Player")
+function PitBull4:MakeSingletonFrame(classification)
 	if DEBUG then
 		expect(unit, 'typeof', 'string')
 	end
-	
+
+	local classification_db = PitBull4.db.profile.units[classification]
+	if not classification_db then
+		error(("Bad argument #1 to `MakeSingletonFrame'.  %q is not a singleton classification"):format(tostring(classification)),2)
+	end
+		
+	local unit = classification_db.unit
+
 	local id = PitBull4.Utils.GetBestUnitID(unit)
 	if not PitBull4.Utils.IsSingletonUnitID(id) then
-		error(("Bad argument #1 to `MakeSingletonFrame'. %q is not a singleton UnitID"):format(tostring(unit)), 2)
+		error(("Bad unit set on Singleton Classification %q.  %q is not a singleton UnitID"):format(tostring(classification),tostring(unit)), 2)
 	end
 	unit = id
 	
-	local frame_name = "PitBull4_Frames_" .. unit
+	local frame_name = "PitBull4_Frames_" .. classification 
 	local frame = _G[frame_name]
 	
 	if not frame then
@@ -60,17 +67,18 @@ function PitBull4:MakeSingletonFrame(unit)
 		
 		frame.is_singleton = true
 		
-		-- for singletons, its classification is its UnitID
-		local classification = unit
 		frame.classification = classification
-		frame.classification_db = PitBull4.db.profile.units[classification]
+		frame.classification_db = classification_db 
 		
-		local is_wacky = PitBull4.Utils.IsWackyUnitGroup(classification)
-		frame.is_wacky = is_wacky
+		frame.is_wacky = PitBull4.Utils.IsWackyUnitGroup(unit)
 		
 		self:ConvertIntoUnitFrame(frame)
 		
 		frame:SetAttribute("unit", unit)
+	elseif frame.classification_db ~= classification_db then
+		-- Previously deleted frame being reused, set the classification_db
+		-- to its new classification_db.
+		frame.classification_db = classification_db
 	end
 	
 	frame:Activate()
@@ -314,11 +322,15 @@ function UnitFrame__scripts:OnAttributeChanged(key, value)
 			PitBull4.unit_id_to_frames_with_wacky[old_unit][self] = nil
 		end
 	
+		local guid
 		self.unit = new_unit
 		if new_unit then
 			PitBull4.unit_id_to_frames[new_unit][self] = true
 			PitBull4.unit_id_to_frames_with_wacky[new_unit][self] = true
+			guid = UnitGUID(new_unit)
 		end
+
+		self:UpdateGUID(guid)
 	elseif key == "state-unitexists" then
 		if value then
 			UnitFrame__scripts.OnShow(self)
@@ -564,6 +576,21 @@ function UnitFrame:UnforceShow()
 end
 UnitFrame.UnforceShow = PitBull4:OutOfCombatWrapper(UnitFrame.UnforceShow)
 
+function UnitFrame:Rename(name)
+	if self.classification == name then
+		return
+	end
+
+	local old_name = "PitBull4_Frames_" .. self.classification
+	local new_name = "PitBull4_Frames_" .. name
+
+	PitBull4.classification_to_frames[self.classification][self] = nil
+	PitBull4.classification_to_frames[name][self] = true
+	_G[old_name] = nil
+	_G[new_name] = self 
+	self.classification = name
+end
+
 local LibSharedMedia = LibStub("LibSharedMedia-3.0", true)
 if not LibSharedMedia then
 	LoadAddOn("LibSharedMedia-3.0")
@@ -616,6 +643,16 @@ function UnitFrame:Update(same_guid, update_layout)
 	if self.dont_update then
 		return
 	end
+
+	local classification_db = self.classification_db
+	if not classification_db or not self.layout_db then
+		-- Possibly unused frame made for another profile
+		return
+	end
+
+	-- Update the unit if it changed
+	self:ProxySetAttribute("unit",classification_db.unit)
+
 	if not self.guid and not self.force_show then
 	 	if self.populated then
 			self.populated = nil
@@ -627,9 +664,6 @@ function UnitFrame:Update(same_guid, update_layout)
 			end
 		end
 		return
-	elseif not self.classification_db or not self.layout_db then
-		-- Possibly unused frame made for another profile
-		return	
 	end
 	self.populated = true
 	
