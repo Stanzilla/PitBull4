@@ -43,7 +43,7 @@ UnitPopupButtons["PB4_CLEAR_FOCUS"] = {
 -- @usage local frame = PitBull4:MakeSingletonFrame("Player")
 function PitBull4:MakeSingletonFrame(classification)
 	if DEBUG then
-		expect(unit, 'typeof', 'string')
+		expect(classification, 'typeof', 'string')
 	end
 
 	local classification_db = PitBull4.db.profile.units[classification]
