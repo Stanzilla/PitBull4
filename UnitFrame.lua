@@ -330,8 +330,10 @@ function UnitFrame__scripts:OnAttributeChanged(key, value)
 			local is_wacky = PitBull4.Utils.IsWackyUnitGroup(new_unit)
 			self.is_wacky = is_wacky
 			if is_wacky then
-				PitBull4.wacky_frames[self] = true
-				PitBull4.num_wacky_frames = PitBull4.num_wacky_frames + 1
+				if not PitBull4.wacky_frames[self] then
+					PitBull4.wacky_frames[self] = true
+					PitBull4.num_wacky_frames = PitBull4.num_wacky_frames + 1
+				end
 				PitBull4.non_wacky_frames[self] = nil
 			else
 				if PitBull4.wacky_frames[self] then
