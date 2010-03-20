@@ -1129,9 +1129,9 @@ function PitBull4.Options.get_unit_options()
 	end
 	unit_options.args.sub = {
 		type = 'group',
-		name = "",
-		inline = true,
+		name = L["General"],
 		args = args,
+		order = next_order()
 	}
 	
 	local args = {}
