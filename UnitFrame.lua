@@ -665,8 +665,12 @@ function UnitFrame:Update(same_guid, update_layout)
 		return
 	end
 
-	-- Update the unit if it changed
-	self:ProxySetAttribute("unit",classification_db.unit)
+	-- Update the unit if it changed, only applicable to singleton units,
+	-- member units don't have a configured unit but a unit_group and
+	-- the unit is set by the SecureGroupHeaderTemplate instead.
+	if self.is_singleton then
+		self:ProxySetAttribute("unit",classification_db.unit)
+	end
 
 	if not self.guid and not self.force_show then
 	 	if self.populated then
