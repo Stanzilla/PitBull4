@@ -662,8 +662,8 @@ function PitBull4.Options.get_unit_options()
 		desc = L["Horizontal offset between relative point and anchor point."],
 		order = next_order(),
 		type = 'range',
-		min = -math.floor(GetScreenWidth() / 10) * 5,
-		max = math.floor(GetScreenWidth() / 10) * 5,
+		min = -math.floor(GetScreenWidth()),
+		max = math.floor(GetScreenWidth()),
 		get = function(info)
 			return round(get_db(info[1]).position_x)
 		end,
@@ -678,8 +678,8 @@ function PitBull4.Options.get_unit_options()
 		desc = L["Vertical offset between relative point and anchor point."],
 		order = next_order(),
 		type = 'range',
-		min = -math.floor(GetScreenHeight() / 10) * 5,
-		max = math.floor(GetScreenHeight() / 10) * 5,
+		min = -math.floor(GetScreenHeight()),
+		max = math.floor(GetScreenHeight()),
 		get = function(info)
 			return round(get_db(info[1]).position_y)
 		end,
