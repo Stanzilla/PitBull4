@@ -231,6 +231,7 @@ function PitBull4.Options.get_unit_options()
 	end
 	
 	local shared_args = {}
+	local shared_position_args = {}
 	local unit_args = {}
 	local group_args = {}
 	local group_layout_args = {}
@@ -597,9 +598,68 @@ function PitBull4.Options.get_unit_options()
 		disabled = disabled,
 	}
 	
-	shared_args.position_x = {
-		name = L["Horizontal position"],
-		desc = L["Horizontal position on the x-axis of the screen."],
+	shared_position_args.anchor = {
+		name = L["Anchor point"],
+		desc = L["Anchor point on the unit frame."],
+		order = next_order(),
+		type = 'select',
+		get = get,
+		set = set_with_refresh_layout,
+		values = function(info) 
+			local t = {
+			TOP = L["Top"],
+			RIGHT = L["Right"],
+			BOTTOM = L["Bottom"],
+			LEFT = L["Left"],
+			TOPRIGHT = L["Top right"],
+			TOPLEFT = L["Top left"],
+			BOTTOMRIGHT = L["Bottom right"],
+			BOTTOMLEFT = L["Bottom left"],
+			CENTER = L["Center"],
+			}
+
+			if info[1] == "groups" then
+				t[""] = L["From growth direction"]
+			end
+			return t
+		end,
+	}
+
+	shared_position_args.relative_to = {
+		name = L["Relative to"],
+		desc = L["Frame which the unit frame is placed relative to."],
+		order = next_order(),
+		type = 'select',
+		get = get,
+		set = set_with_refresh_layout,
+		values = {
+			["UIParent"] = L["Game window"],
+		},
+	}
+
+	shared_position_args.relative_point = {
+		name = L["Relative point"],
+		desc = L["Point on the relative to frame."],
+		order = next_order(),
+		type = 'select',
+		get = get,
+		set = set_with_refresh_layout,
+		values = {
+			TOP = L["Top"],
+			RIGHT = L["Right"],
+			BOTTOM = L["Bottom"],
+			LEFT = L["Left"],
+			TOPRIGHT = L["Top right"],
+			TOPLEFT = L["Top left"],
+			BOTTOMRIGHT = L["Bottom right"],
+			BOTTOMLEFT = L["Bottom left"],
+			CENTER = L["Center"],
+		},
+	}
+
+	shared_position_args.position_x = {
+		name = L["Horizontal offset"],
+		desc = L["Horizontal offset between relative point and anchor point."],
 		order = next_order(),
 		type = 'range',
 		min = -math.floor(GetScreenWidth() / 10) * 5,
@@ -613,9 +673,9 @@ function PitBull4.Options.get_unit_options()
 		disabled = disabled,
 	}
 	
-	shared_args.position_y = {
-		name = L["Vertical position"],
-		desc = L["Vertical position on the y-axis of the screen."],
+	shared_position_args.position_y = {
+		name = L["Vertical offset"],
+		desc = L["Vertical offset between relative point and anchor point."],
 		order = next_order(),
 		type = 'range',
 		min = -math.floor(GetScreenHeight() / 10) * 5,
@@ -789,7 +849,10 @@ function PitBull4.Options.get_unit_options()
 			left_up = ("%s, %s"):format(L["Columns left"], L["Rows up"]),
 		},
 		get = get,
-		set = set_with_refresh_group,
+		set = function(info, value)
+			PitBull4:AdjustGroupAnchorForDirectionChange(get_group_db(), value)	
+			set_with_refresh_group(info, value)
+		end,
 		disabled = disabled,
 		width = 'double',
 	}
@@ -1127,10 +1190,17 @@ function PitBull4.Options.get_unit_options()
 	for k, v in pairs(unit_args) do
 		args[k] = v
 	end
-	unit_options.args.sub = {
+	unit_options.args.general = {
 		type = 'group',
 		name = L["General"],
 		args = args,
+		order = next_order()
+	}
+	unit_options.args.position = {
+		type = 'group',
+		name = L["Position"],
+		desc = L["Configure the position of the unit frame on screen."],
+		args = shared_position_args,
 		order = next_order()
 	}
 	
@@ -1146,6 +1216,14 @@ function PitBull4.Options.get_unit_options()
 		name = L["General"],
 		args = args,
 		order = next_order(),
+	}
+
+	group_options.args.position = {
+		type = 'group',
+		name = L["Position"],
+		desc = L["Configure the position of the unit group on screen."],
+		args = shared_position_args,
+		order = next_order()
 	}
 
 	group_options.args.layout = {

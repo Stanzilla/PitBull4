@@ -252,17 +252,70 @@ function SingletonUnitFrame__scripts:OnDragStop()
 		self:StopMovingOrSizing()
 	end
 	
+	local db = self.classification_db
+	local anchor = db.anchor
+	local relative_frame = _G[db.relative_to]
+	local relative_point = db.relative_point
+
 	local ui_scale = UIParent:GetEffectiveScale()
 	local scale = self:GetEffectiveScale() / ui_scale
 	
-	local x, y = self:GetCenter()
+	local x, y
+	if anchor == "TOPLEFT" then
+		x, y = self:GetLeft(), self:GetTop()
+	elseif anchor == "TOPRIGHT" then
+		x, y = self:GetRight(), self:GetTop()
+	elseif anchor == "BOTTOMLEFT" then
+		x, y = self:GetLeft(), self:GetBottom()
+	elseif anchor == "BOTTOMRIGHT" then
+		x, y = self:GetRight(), self:GetBottom()
+	elseif anchor == "CENTER" then
+		x, y = self:GetCenter()
+	elseif anchor == "TOP" then
+		x = self:GetCenter()
+		y = self:GetTop()
+	elseif anchor == "BOTTOM" then
+		x = self:GetCenter()
+		y = self:GetBottom()
+	elseif anchor == "LEFT" then
+		x, y = self:GetCenter()
+		x = self:GetLeft()
+	elseif anchor == "RIGHT" then
+		x, y = self:GetCenter()
+		x = self:GetRight()
+	end
 	x, y = x * scale, y * scale
+
+	local x2,y2
+	if relative_point == "TOPLEFT" then
+		x2, y2 = relative_frame:GetLeft(), relative_frame:GetTop()
+	elseif relative_point == "TOPRIGHT" then
+		x2, y2 = relative_frame:GetRight(), relative_frame:GetTop()
+	elseif relative_point == "BOTTOMLEFT" then
+		x2, y2 = relative_frame:GetLeft(), relative_frame:GetBottom()
+	elseif relative_point == "BOTTOMRIGHT" then
+		x2, y2 = relative_frame:GetRight(), relative_frame:GetBottom()
+	elseif relative_point == "CENTER" then
+		x2, y2 = relative_frame:GetCenter()
+	elseif relative_point == "TOP" then
+		x2 = relative_frame:GetCenter()
+		y2 = relative_frame:GetTop()
+	elseif relative_point == "BOTTOM" then
+		x2 = relative_frame:GetCenter()
+		y2 = relative_frame:GetBottom()
+	elseif relative_point == "LEFT" then
+		x2, y2 = relative_frame:GetCenter()
+		x2 = relative_frame:GetLeft()
+	elseif relative_point == "RIGHT" then
+		x2, y2 = relative_frame:GetCenter()
+		x2 = relative_frame:GetRight()
+	end
+
+	x = x - x2
+	y = y - y2
 	
-	x = x - GetScreenWidth()/2
-	y = y - GetScreenHeight()/2
-	
-	self.classification_db.position_x = x
-	self.classification_db.position_y = y
+	db.position_x = x
+	db.position_y = y
 	
 	LibStub("AceConfigRegistry-3.0"):NotifyChange("PitBull4")
 	
@@ -538,7 +591,7 @@ function SingletonUnitFrame:RefixSizeAndPosition()
 	
 	local scale = self:GetEffectiveScale() / UIParent:GetEffectiveScale()
 	self:ClearAllPoints()
-	self:SetPoint("CENTER", UIParent, "CENTER", classification_db.position_x / scale, classification_db.position_y / scale)
+	self:SetPoint(classification_db.anchor, classification_db.relative_to, classification_db.relative_point, classification_db.position_x / scale, classification_db.position_y / scale)
 end
 SingletonUnitFrame.RefixSizeAndPosition = PitBull4:OutOfCombatWrapper(SingletonUnitFrame.RefixSizeAndPosition)
 

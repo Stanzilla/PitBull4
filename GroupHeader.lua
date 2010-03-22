@@ -248,6 +248,48 @@ local function position_label(self, label)
 	end
 end
 
+-- Offsets used to be stored between the center of the screen and the center
+-- of the group frame, while the frames anchor point varied based on the
+-- growth direction of the frame.  So the offset from the actual anchor point 
+-- was calculated as needed.  Now we store the the actual offsets and only
+-- recalculate if the anchor point is being determined by the growth direction.
+-- This function converts the existing offsets to the new format.
+function PitBull4:MigrateGroupAnchorToNewFormat(group_db, layout_db)
+	local scale = layout_db.scale * group_db.scale / UIParent:GetEffectiveScale()
+	local direction = group_db.direction
+	local unit_width = layout_db.size_x * group_db.size_x
+	local unit_height = layout_db.size_y * group_db.size_y
+	local x_diff = unit_width / 2 * -DIRECTION_TO_HORIZONTAL_SPACING_MULTIPLIER[direction]
+	local y_diff = unit_height / 2 * -DIRECTION_TO_VERTICAL_SPACING_MULTIPLIER[direction]
+
+	group_db.position_x = (group_db.position_x / scale + x_diff) * scale
+	group_db.position_y = (group_db.position_y / scale + y_diff) * scale
+end
+
+-- Handles adjusting the offsets for when the growth direction changes.
+function PitBull4:AdjustGroupAnchorForDirectionChange(group_db, new_direction)
+	-- If the anchor is set explicitly then changing the direction does not require
+	-- a recalculation of the anchor offsets.
+	if group_db.anchor ~= "" then return end
+	local old_direction = group_db.direction
+	local layout_db = self.db.profile.layouts[group_db.layout]
+	local scale = layout_db.scale * group_db.scale
+	local unit_width = layout_db.size_x * group_db.size_x
+	local unit_height = layout_db.size_y * group_db.size_y
+
+	-- Calculate the difference from the current anchor point to the center
+	local x_diff = unit_width / 2 * DIRECTION_TO_HORIZONTAL_SPACING_MULTIPLIER[old_direction]
+	local y_diff = unit_height / 2 * DIRECTION_TO_VERTICAL_SPACING_MULTIPLIER[old_direction]
+
+	-- Calculate the difference from the center to the new anchor point
+	x_diff = x_diff + unit_width / 2 * -DIRECTION_TO_HORIZONTAL_SPACING_MULTIPLIER[new_direction]
+	y_diff = y_diff + unit_height / 2 * -DIRECTION_TO_VERTICAL_SPACING_MULTIPLIER[new_direction]
+
+	-- Adjust the offset to the new anchor point
+	group_db.position_x = (group_db.position_x / scale + x_diff) * scale
+	group_db.position_y = (group_db.position_y / scale + y_diff) * scale
+end
+
 --- Reset the size and position of the group header.  More accurately,
 -- the scale and the position since size is set dynamically.
 -- @usage header:RefixSizeAndPosition()
@@ -262,12 +304,12 @@ function GroupHeader:RefixSizeAndPosition()
 	self:SetFrameLevel(layout_db.level - 1) -- 1 less than what the unit frame will be at
 
 	local scale = self:GetEffectiveScale() / UIParent:GetEffectiveScale()
-	local direction = group_db.direction
-	local anchor = DIRECTION_TO_GROUP_ANCHOR_POINT[direction]
+	local anchor = group_db.anchor
+	if anchor == "" then
+		anchor = DIRECTION_TO_GROUP_ANCHOR_POINT[group_db.direction]
+	end
 	local unit_width = layout_db.size_x * group_db.size_x 
 	local unit_height = layout_db.size_y * group_db.size_y 
-	local x_diff = unit_width / 2 * -DIRECTION_TO_HORIZONTAL_SPACING_MULTIPLIER[direction]
-	local y_diff = unit_height / 2 * -DIRECTION_TO_VERTICAL_SPACING_MULTIPLIER[direction]
 
 	-- Set minimum width and height.  If we don't do this then
 	-- SecureTemplates will calculate the size dynamically and these
@@ -286,7 +328,7 @@ function GroupHeader:RefixSizeAndPosition()
 
 
 	self:ClearAllPoints()
-	self:SetPoint(anchor, UIParent, "CENTER", group_db.position_x / scale + x_diff, group_db.position_y / scale + y_diff)
+	self:SetPoint(anchor, group_db.relative_to, group_db.relative_point, group_db.position_x / scale, group_db.position_y / scale)
 end
 
 local function count_returns(...)
@@ -1124,19 +1166,73 @@ function MemberUnitFrame__scripts:OnDragStop()
 	else
 		header:StopMovingOrSizing()
 	end
+
+	local db = header.group_db
+	local anchor = db.anchor
+	if anchor == "" then
+		anchor = DIRECTION_TO_GROUP_ANCHOR_POINT[db.direction]
+	end
+	local relative_frame = _G[db.relative_to]
+	local relative_point = db.relative_point
+	local frame = header[1]
 	
 	local ui_scale = UIParent:GetEffectiveScale()
-	local scale = header[1]:GetEffectiveScale() / ui_scale
-	
-	local x, y = header[1]:GetCenter()
+	local scale = frame:GetEffectiveScale() / ui_scale
+		
+	local x, y
+	if anchor == "TOPLEFT" then
+		x, y = frame:GetLeft(), frame:GetTop()
+	elseif anchor == "TOPRIGHT" then
+		x, y = frame:GetRight(), frame:GetTop()
+	elseif anchor == "BOTTOMLEFT" then
+		x, y = frame:GetLeft(), frame:GetBottom()
+	elseif anchor == "BOTTOMRIGHT" then
+		x, y = frame:GetRight(), frame:GetBottom()
+	elseif anchor == "CENTER" then
+		x, y = frame:GetCenter()
+	elseif anchor == "TOP" then
+		x = frame:GetCenter()
+		y = frame:GetTop()
+	elseif anchor == "BOTTOM" then
+		x = frame:GetCenter()
+		y = frame:GetBottom()
+	elseif anchor == "LEFT" then
+		x, y = frame:GetCenter()
+		x = frame:GetLeft()
+	elseif anchor == "RIGHT" then
+		x, y = frame:GetCenter()
+		x = frame:GetRight()
+	end
 	x, y = x * scale, y * scale
 	
-	x = x - GetScreenWidth()/2
-	y = y - GetScreenHeight()/2
-	
-	header.group_db.position_x = x
-	header.group_db.position_y = y
-	
+	local x2,y2
+	if relative_point == "TOPLEFT" then
+		x2, y2 = relative_frame:GetLeft(), relative_frame:GetTop()
+	elseif relative_point == "TOPRIGHT" then
+		x2, y2 = relative_frame:GetRight(), relative_frame:GetTop()
+	elseif relative_point == "BOTTOMLEFT" then
+		x2, y2 = relative_frame:GetLeft(), relative_frame:GetBottom()
+	elseif relative_point == "BOTTOMRIGHT" then
+		x2, y2 = relative_frame:GetRight(), relative_frame:GetBottom()
+	elseif relative_point == "CENTER" then
+		x2, y2 = relative_frame:GetCenter()
+	elseif relative_point == "TOP" then
+		x2 = relative_frame:GetCenter()
+		y2 = relative_frame:GetTop()
+	elseif relative_point == "BOTTOM" then
+		x2 = relative_frame:GetCenter()
+		y2 = relative_frame:GetBottom()
+	elseif relative_point == "LEFT" then
+		x2, y2 = relative_frame:GetCenter()
+		x2 = relative_frame:GetLeft()
+	elseif relative_point == "RIGHT" then
+		x2, y2 = relative_frame:GetCenter()
+		x2 = relative_frame:GetRight()
+	end
+
+	db.position_x = x - x2
+	db.position_y = y - y2
+
 	LibStub("AceConfigRegistry-3.0"):NotifyChange("PitBull4")
 	
 	header:RefreshLayout(true)

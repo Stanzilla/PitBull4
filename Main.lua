@@ -82,6 +82,9 @@ local DATABASE_DEFAULTS = {
 		units = {
 			['**'] = {
 				enabled = false,
+				anchor = "CENTER",
+				relative_to = "UIParent",
+				relative_point = "CENTER",
 				position_x = 0,
 				position_y = 0,
 				size_x = 1, -- this is a multiplier
@@ -111,6 +114,9 @@ local DATABASE_DEFAULTS = {
 				group_by = nil,
 				use_pet_header = nil,
 				
+				anchor = "", -- automatic from growth direction
+				relative_to = "UIParent",
+				relative_point = "CENTER",
 				position_x = 0,
 				position_y = 0,
 				size_x = 1, -- this is a multiplier
@@ -137,6 +143,8 @@ local DATABASE_DEFAULTS = {
 			}
 		},
 		made_groups = false,
+		made_units = false,
+		group_anchors_updated = false,
 		layouts = {
 			['**'] = {
 				size_x = 200,
@@ -1011,12 +1019,41 @@ local function migrate_to_new_units_db()
 	end
 end
 
+local function migrate_to_new_group_anchor_format()
+	local db = PitBull4.db
+	local profiles = db and db.profiles 
+	if not profiles then return end
+	local current_profile = db:GetCurrentProfile()
+	for profile_name,profile in pairs(profiles) do
+		if not profile.group_anchors_updated then -- Old profile
+			db:SetProfile(profile_name)		
+			profile = db.profile
+			profile.group_anchors_updated = true
+			local groups = profile.groups
+			local layouts = profile.layouts
+			if groups and layouts then
+				for group, group_db in pairs(groups) do
+					if group_db then
+						local layout_db = layouts[group_db.layout]
+						if layout_db then
+							PitBull4:MigrateGroupAnchorToNewFormat(group_db, layout_db)
+						end
+					end
+				end
+			end
+		end
+	end
+	db:SetProfile(current_profile)
+end
+
 function PitBull4:OnInitialize()
 	migrate_to_new_units_db()
 
 	db = LibStub("AceDB-3.0"):New("PitBull4DB", DATABASE_DEFAULTS, 'Default')
 	DATABASE_DEFAULTS = nil
 	self.db = db
+
+	migrate_to_new_group_anchor_format()
 	
 	db.RegisterCallback(self, "OnProfileChanged")
 	db.RegisterCallback(self, "OnProfileCopied", "OnProfileChanged")
