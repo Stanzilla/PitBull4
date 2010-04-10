@@ -113,9 +113,12 @@ function PitBull4:SwapGroupTemplate(group)
 	old_header.group_db.enabled = false
 	old_header:RefreshGroup()
 	old_header:UpdateShownState()
+	
+	local pet_based = not not group_db.unit_group:match("pet") -- this feels dirty
+	local use_pet_header = pet_based and group_db.use_pet_header
 
 	local new_name
-	if group_db.use_pet_header then
+	if use_pet_header then
 		new_name = "PitBull4_PetGroups_"..group
 	else
 		new_name = "PitBull4_Groups_"..group
@@ -1172,7 +1175,8 @@ function GroupHeader:Rename(name)
 		return
 	end
 	
-	local use_pet_header = self.group_db.use_pet_header
+	local pet_based = not not self.group_db.unit_group:match("pet") -- this feels dirty
+	local use_pet_header = pet_based and self.group_db.use_pet_header
 	local prefix = use_pet_header and "PitBull4_PetGroups_" or "PitBull4_Groups_"
 
 	local old_header_name = prefix .. self.name
