@@ -220,6 +220,30 @@ local DIRECTION_TO_VERTICAL_SPACING_MULTIPLIER = {
 	left_up = 1,
 }
 
+local POINT_TO_HORIZONTAL_MULTIPLIER = {
+	TOP = 0,
+	BOTTOM = 0,
+	LEFT = 1,
+	RIGHT = -1,
+	TOPLEFT = 1,
+	TOPRIGHT = -1,
+	BOTTOMLEFT = 1,
+	BOTTOMRIGHT = -1,
+	CENTER = 0,
+}
+
+local POINT_TO_VERTICAL_MULTIPLIER = {
+	TOP = -1,
+	BOTTOM = 1,
+	LEFT = 0,
+	RIGHT = 0,
+	TOPLEFT = -1,
+	TOPRIGHT = -1,
+	BOTTOMLEFT = 1,
+	BOTTOMRIGHT = 1,
+	CENTER = 0,
+}
+
 local GROUPING_ORDER = {}
 do
 	local t = {}
@@ -366,17 +390,47 @@ function GroupHeader:RefixSizeAndPosition()
 	self:SetFrameStrata(layout_db.strata)
 	self:SetFrameLevel(layout_db.level - 1) -- 1 less than what the unit frame will be at
 
+	-- Calculate the  width and height of the group when the number of units
+	-- returned from GetMaxUnits() exist.  Use this to cause config mode to 
+	-- behave this way.
 	local unit_width = layout_db.size_x * group_db.size_x 
 	local unit_height = layout_db.size_y * group_db.size_y 
+	local max = self:GetMaxUnits()
+	local units_per_column = group_db.units_per_column
+	local num_columns
+	if units_per_column and max > units_per_column then
+		num_columns = math.ceil(max / units_per_column)
+	else
+		units_per_column = max
+		num_columns = 1
+	end
+	local point = self:GetAttribute("point") or "TOP"
+	local x_offset_mult = POINT_TO_HORIZONTAL_MULTIPLIER[point]
+	local y_offset_mult = POINT_TO_VERTICAL_MULTIPLIER[point]
+	local x_mult, y_mult = math.abs(x_offset_mult), math.abs(y_offset_mult)
+	local x_offset = self:GetAttribute("xOffset") or 0
+	local y_offset = self:GetAttribute("yOffset") or 0
+	local column_spacing = self:GetAttribute("columnSpacing") or 0 
+	local col_point = self:GetAttribute("columnAnchorPoint")
+	local col_x_mult = POINT_TO_HORIZONTAL_MULTIPLIER[col_point]
+	local col_y_mult = POINT_TO_VERTICAL_MULTIPLIER[col_point]
+	local width = x_mult * (units_per_column - 1) * unit_width + ((units_per_column - 1) * (x_offset * x_offset_mult)) + unit_width
+	local height = y_mult * (units_per_column - 1) * unit_height + ((units_per_column - 1) * (y_offset * y_offset_mult)) + unit_height
+	if num_columns > 1 then
+		width = width + ((num_columns - 1) * math.abs(col_x_mult) * (width + column_spacing))
+		height = height + ((num_columns - 1) * math.abs(col_y_mult) * (height + column_spacing))
+	end
 
 	-- Set minimum width and height.  If we don't do this then
 	-- SecureTemplates will calculate the size dynamically and these
 	-- dimensions will end up being set to 0.1 if there are no units to
 	-- display.  This causes the positioning of the group header to move
 	-- and results in group frames that jump when someone joins the group
-	-- from where they were in config mode.
-	updated = self:ProxySetAttribute("minWidth",unit_width) or updated
-	updated = self:ProxySetAttribute("minHeight",unit_height) or updated
+	-- from where they were in config mode.  It also will make the frames
+	-- that are anchored to the entire group to behave differently in config
+	-- mode from actual use.
+	updated = self:ProxySetAttribute("minWidth",width) or updated
+	updated = self:ProxySetAttribute("minHeight",height) or updated
 
 	if not updated then
 		-- Update absolutely must be called at least once to ensure the GroupHeader
