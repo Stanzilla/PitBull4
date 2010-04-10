@@ -381,7 +381,7 @@ function GroupHeader:RefixSizeAndPosition()
 	if not updated then
 		-- Update absolutely must be called at least once to ensure the GroupHeader
 		-- frame size is recalculated.
-		self:Update()
+		self:Update(true)
 	end
 
 	-- Check if the frame we will be anchoring to exists and if not
