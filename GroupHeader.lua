@@ -446,8 +446,8 @@ function GroupHeader:RefixSizeAndPosition()
 	-- from where they were in config mode.  It also will make the frames
 	-- that are anchored to the entire group to behave differently in config
 	-- mode from actual use.
-	updated = self:ProxySetAttribute("minWidth",width) or updated
-	updated = self:ProxySetAttribute("minHeight",height) or updated
+	updated = self:ProxySetAttribute("minWidth",math.max(width,0.1)) or updated
+	updated = self:ProxySetAttribute("minHeight",math.max(height,0.1)) or updated
 
 	if not updated then
 		-- Update absolutely must be called at least once to ensure the GroupHeader
