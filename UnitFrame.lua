@@ -673,17 +673,43 @@ end
 UnitFrame.UnforceShow = PitBull4:OutOfCombatWrapper(UnitFrame.UnforceShow)
 
 function UnitFrame:Rename(name)
-	if self.classification == name then
+	local old_name = self.classification
+	if old_name == name then
 		return
 	end
 
-	local old_name = "PitBull4_Frames_" .. self.classification
-	local new_name = "PitBull4_Frames_" .. name
+	-- Look for groups and units that are anchored to this frame and update their
+	-- relative_to reference, there is no need to actually update the anchors
+	-- because the frame will already be anchored properly and changing the
+	-- name won't break the anchor.
+	for group, group_db in pairs(PitBull4.db.profile.groups) do
+		local rel_to = group_db.relative_to
+		local rel_type = rel_to:sub(1,1)
+		if rel_type == "S" then
+			local rel_name = rel_to:sub(2)
+			if rel_name == old_name then
+				group_db.relative_to = rel_type .. name
+			end
+		end
+	end
+	for unit, unit_db in pairs(PitBull4.db.profile.units) do
+		local rel_to = unit_db.relative_to
+		local rel_type = rel_to:sub(1,1)
+		if rel_type == "S" then
+			local rel_name = rel_to:sub(2)
+			if rel_name == old_name then
+				unit_db.relative_to = rel_type .. name
+			end
+		end
+	end
 
-	PitBull4.classification_to_frames[self.classification][self] = nil
+	local old_frame_name = "PitBull4_Frames_" .. old_name 
+	local new_frame_name = "PitBull4_Frames_" .. name
+
+	PitBull4.classification_to_frames[old_name][self] = nil
 	PitBull4.classification_to_frames[name][self] = true
-	_G[old_name] = nil
-	_G[new_name] = self 
+	_G[old_frame_name] = nil
+	_G[new_frame_name] = self 
 	self.classification = name
 end
 

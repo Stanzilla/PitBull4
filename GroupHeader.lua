@@ -1178,18 +1178,44 @@ end
 GroupHeader.UnforceShow = PitBull4:OutOfCombatWrapper(GroupHeader.UnforceShow)
 
 function GroupHeader:Rename(name)
-	if self.name == name then
+	local old_name = self.name
+	if old_name == name then
 		return
+	end
+
+	-- Look for groups and units that are anchored to this frame and update their
+	-- relative_to reference, there is no need to actually update the anchors
+	-- because the frame will already be anchored properly and changing the
+	-- name won't break the anchor.
+	for group, group_db in pairs(PitBull4.db.profile.groups) do
+		local rel_to = group_db.relative_to
+		local rel_type = rel_to:sub(1,1)
+		if rel_type == "g" or rel_type == "f" then
+			local rel_name = rel_to:sub(2)
+			if rel_name == old_name then
+				group_db.relative_to = rel_type .. name
+			end
+		end
+	end
+	for unit, unit_db in pairs(PitBull4.db.profile.units) do
+		local rel_to = unit_db.relative_to
+		local rel_type = rel_to:sub(1,1)
+		if rel_type == "g" or rel_type == "f" then
+			local rel_name = rel_to:sub(2)
+			if rel_name == old_name then
+				unit_db.relative_to = rel_type .. name
+			end
+		end
 	end
 	
 	local pet_based = not not self.group_db.unit_group:match("pet") -- this feels dirty
 	local use_pet_header = pet_based and self.group_db.use_pet_header
 	local prefix = use_pet_header and "PitBull4_PetGroups_" or "PitBull4_Groups_"
 
-	local old_header_name = prefix .. self.name
+	local old_header_name = prefix .. old_name 
 	local new_header_name = prefix .. name
 	
-	PitBull4.name_to_header[self.name] = nil
+	PitBull4.name_to_header[old_name] = nil
 	PitBull4.name_to_header[name] = self
 	_G[old_header_name] = nil
 	_G[new_header_name] = self
