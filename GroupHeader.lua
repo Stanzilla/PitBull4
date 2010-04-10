@@ -396,6 +396,23 @@ function GroupHeader:RefixSizeAndPosition()
 	local unit_width = layout_db.size_x * group_db.size_x 
 	local unit_height = layout_db.size_y * group_db.size_y 
 	local max = self:GetMaxUnits()
+	local super_unit_group = self.super_unit_group
+	local config_mode = PitBull4.config_mode
+
+	-- Limit the number of frames to the config mode for raid
+	if config_mode and config_mode:sub(1,4) == "raid" and super_unit_group == "raid" then
+		if config_mode == "raid" then
+			if max > 5 then
+				max = 5
+			end
+		elseif config_mode:sub(1,4) == "raid" then
+			local num = config_mode:sub(5)+0 -- raid10, raid25, raid40 => 10, 25, 40
+			if num < max then
+				max = num
+			end
+		end
+	end
+
 	local units_per_column = group_db.units_per_column
 	local num_columns
 	if units_per_column and max > units_per_column then
@@ -1178,6 +1195,7 @@ function GroupHeader:ForceShow()
 		self.force_show = true
 		self:ForceUnitFrameCreation()
 		self:AssignFakeUnitIDs()
+		self:RefixSizeAndPosition()
 		if not self.label then
 			local label = self:CreateFontString(self:GetName() .. "_Label", "OVERLAY", "ChatFontNormal")
 			self.label = label
