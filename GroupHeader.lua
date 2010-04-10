@@ -4,6 +4,7 @@ local PitBull4 = _G.PitBull4
 local DEBUG = PitBull4.DEBUG
 local expect = PitBull4.expect
 local deep_copy = PitBull4.Utils.deep_copy
+local frames_to_anchor = PitBull4.frames_to_anchor
 
 local MAX_PARTY_MEMBERS_WITH_PLAYER = MAX_PARTY_MEMBERS + 1
 local NUM_CLASSES = 0
@@ -85,6 +86,13 @@ function PitBull4:MakeGroupHeader(group)
 	end
 	
 	header:UpdateShownState()	
+
+	for frame, relative_to in pairs(frames_to_anchor) do
+		local relative_frame = PitBull4.Utils.GetRelativeFrame(relative_to)
+		if relative_frame == header then
+			frame:RefixSizeAndPosition()
+		end
+	end
 end
 PitBull4.MakeGroupHeader = PitBull4:OutOfCombatWrapper(PitBull4.MakeGroupHeader)
 
@@ -291,6 +299,75 @@ function PitBull4:AdjustGroupAnchorForDirectionChange(group_db, new_direction)
 	group_db.position_y = (group_db.position_y / scale + y_diff) * scale
 end
 
+-- Anchors a frame to the first frame within the group.  The first frame probably will
+-- not exist when we need to do the anchoring.  So we need to calculate where the frame
+-- would exist and adjust our offsets accordingly so we can simulate anchoring to the frame
+-- even though we're really anchoring to the group header itself.
+function GroupHeader:AnchorFrameToFirstUnit(frame, anchor, rel_point, x, y)
+	local growth_point = self:GetAttribute("point")
+	if rel_point:find(growth_point, 1, false) then
+		-- The relative point is on the edge we're growing away from so we
+		-- do not need to calculate the offset.
+		frame:SetPoint(anchor, self, rel_point, x,  y)
+	else
+		-- The relative point is not on the edge we're growing away from
+		-- so we must calculate the offset to the other edge of the unit frame
+		local group_db = self.group_db
+		local layout = group_db.layout
+		local layout_db = PitBull4.db.profile.layouts[layout]
+		local scale = self:GetEffectiveScale() / UIParent:GetEffectiveScale()
+		local unit_width = layout_db.size_x * group_db.size_x / scale
+		local unit_height = layout_db.size_y * group_db.size_y / scale
+		local direction = group_db.direction
+
+		if growth_point == "TOP" or growth_point == "BOTTOM" then
+			if rel_point:find("LEFT", 1, false) then
+				x = x - (unit_width / 2)
+				if rel_point == "LEFT" then
+					y = y + (unit_height/ 2 * DIRECTION_TO_VERTICAL_SPACING_MULTIPLIER[direction])
+				end
+			elseif rel_point:find("RIGHT", 1, false) then
+				x = x + (unit_width / 2)
+				if rel_point == "RIGHT" then
+					y = y + (unit_height / 2 * DIRECTION_TO_VERTICAL_SPACING_MULTIPLIER[direction])
+				end
+			end
+		elseif growth_point == "LEFT" or growth_point == "RIGHT" then
+			if rel_point:find("TOP", 1, false) then
+				y = y + (unit_height / 2)
+				if rel_point == "TOP" then
+					x = x + (unit_width / 2 * DIRECTION_TO_HORIZONTAL_SPACING_MULTIPLIER[direction])
+				end
+			elseif  rel_point:find("BOTTOM", 1, false) then
+				y = y - (unit_height / 2)
+				if rel_point == "BOTTOM" then
+					x = x + (unit_width / 2 * DIRECTION_TO_HORIZONTAL_SPACING_MULTIPLIER[direction])
+				end
+			end
+		end
+
+		if growth_point == "TOP" and rel_point:find("BOTTOM", 1, false) then
+			y = y - unit_height
+		elseif growth_point == "BOTTOM" and rel_point:find("TOP", 1, false) then
+			y = y + unit_height
+		elseif growth_point == "LEFT" and rel_point:find("RIGHT", 1, false) then
+			x = x + unit_width
+		elseif growth_point == "RIGHT" and rel_point:find("LEFT", 1, false) then
+			x = x - unit_width
+		end
+
+		if rel_point == "CENTER" then
+			if growth_point == "BOTTOM" or growth_point == "TOP" then
+				y = y + (unit_height / 2 * DIRECTION_TO_VERTICAL_SPACING_MULTIPLIER[direction])
+			else  -- growth_point == "LEFT" or growth_point == "RIGHT"
+				x = x + (unit_width / 2 * DIRECTION_TO_HORIZONTAL_SPACING_MULTIPLIER[direction])
+			end
+		end
+
+		frame:SetPoint(anchor, self, growth_point, x, y)
+	end
+end
+
 --- Reset the size and position of the group header.  More accurately,
 -- the scale and the position since size is set dynamically.
 -- @usage header:RefixSizeAndPosition()
@@ -304,11 +381,6 @@ function GroupHeader:RefixSizeAndPosition()
 	self:SetFrameStrata(layout_db.strata)
 	self:SetFrameLevel(layout_db.level - 1) -- 1 less than what the unit frame will be at
 
-	local scale = self:GetEffectiveScale() / UIParent:GetEffectiveScale()
-	local anchor = group_db.anchor
-	if anchor == "" then
-		anchor = DIRECTION_TO_GROUP_ANCHOR_POINT[group_db.direction]
-	end
 	local unit_width = layout_db.size_x * group_db.size_x 
 	local unit_height = layout_db.size_y * group_db.size_y 
 
@@ -327,9 +399,32 @@ function GroupHeader:RefixSizeAndPosition()
 		self:Update()
 	end
 
+	-- Check if the frame we will be anchoring to exists and if not
+	-- delaying setting the anchor until it does.
+	local rel_to = group_db.relative_to
+	local rel_frame, rel_type = PitBull4.Utils.GetRelativeFrame(rel_to) 
+	if not rel_frame then
+		frames_to_anchor[self] = rel_to
+		if rel_type == "~" then
+			PitBull4.anchor_timer:Show()
+		end
+		return
+	else
+		frames_to_anchor[self] = nil
+	end
+
+	local scale = self:GetEffectiveScale() / UIParent:GetEffectiveScale()
+	local anchor = group_db.anchor
+	if anchor == "" then
+		anchor = DIRECTION_TO_GROUP_ANCHOR_POINT[group_db.direction]
+	end
 
 	self:ClearAllPoints()
-	self:SetPoint(anchor, group_db.relative_to, group_db.relative_point, group_db.position_x / scale, group_db.position_y / scale)
+	if rel_type == "f" then
+		rel_frame:AnchorFrameToFirstUnit(self, anchor, group_db.relative_point, group_db.position_x / scale, group_db.position_y / scale)
+	else
+		self:SetPoint(anchor, rel_frame, group_db.relative_point, group_db.position_x / scale, group_db.position_y / scale)
+	end
 end
 
 local function count_returns(...)
@@ -1206,6 +1301,7 @@ function MemberUnitFrame__scripts:OnDragStop()
 	end
 	x, y = x * scale, y * scale
 	
+	local scale2 = relative_frame:GetEffectiveScale() / ui_scale
 	local x2,y2
 	if relative_point == "TOPLEFT" then
 		x2, y2 = relative_frame:GetLeft(), relative_frame:GetTop()
@@ -1230,6 +1326,7 @@ function MemberUnitFrame__scripts:OnDragStop()
 		x2, y2 = relative_frame:GetCenter()
 		x2 = relative_frame:GetRight()
 	end
+	x2, y2 = x2 * scale2, y2 * scale2
 
 	db.position_x = x - x2
 	db.position_y = y - y2

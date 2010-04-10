@@ -4,6 +4,7 @@ local L = PitBull4.L
 
 local DEBUG = PitBull4.DEBUG
 local expect = PitBull4.expect
+local frames_to_anchor = PitBull4.frames_to_anchor
 
 -- CONSTANTS ----------------------------------------------------------------
 
@@ -86,6 +87,13 @@ function PitBull4:MakeSingletonFrame(classification)
 	frame:RefreshLayout()
 	
 	frame:UpdateGUID(UnitGUID(unit))
+
+	for frame, relative_to in pairs(frames_to_anchor) do
+		local relative_frame = PitBull4.Utils.GetRelativeFrame(relative_to)
+		if relative_frame == frame then
+			frame:RefixSizeAndPosition()
+		end
+	end
 end
 PitBull4.MakeSingletonFrame = PitBull4:OutOfCombatWrapper(PitBull4.MakeSingletonFrame)
 
@@ -286,6 +294,7 @@ function SingletonUnitFrame__scripts:OnDragStop()
 	end
 	x, y = x * scale, y * scale
 
+	local scale2 = relative_frame:GetEffectiveScale() / ui_scale
 	local x2,y2
 	if relative_point == "TOPLEFT" then
 		x2, y2 = relative_frame:GetLeft(), relative_frame:GetTop()
@@ -310,6 +319,7 @@ function SingletonUnitFrame__scripts:OnDragStop()
 		x2, y2 = relative_frame:GetCenter()
 		x2 = relative_frame:GetRight()
 	end
+	x2, y2 = x2 * scale2, y2 * scale2
 
 	x = x - x2
 	y = y - y2
@@ -588,10 +598,28 @@ function SingletonUnitFrame:RefixSizeAndPosition()
 	self:SetScale(layout_db.scale * classification_db.scale)
 	self:SetFrameStrata(layout_db.strata)
 	self:SetFrameLevel(layout_db.level)
+
+	-- Check if the frame we will be anchoring to exists and if not
+	-- delay setting the anchor until it does.
+	local rel_to = classification_db.relative_to
+	local rel_frame, rel_type = PitBull4.Utils.GetRelativeFrame(rel_to) 
+	if not rel_frame then
+		frames_to_anchor[self] = rel_to
+		if rel_type == "~" then
+			PitBull4.anchor_timer:Show()
+		end
+		return
+	else
+		frames_to_anchor[self] = nil
+	end
 	
 	local scale = self:GetEffectiveScale() / UIParent:GetEffectiveScale()
 	self:ClearAllPoints()
-	self:SetPoint(classification_db.anchor, classification_db.relative_to, classification_db.relative_point, classification_db.position_x / scale, classification_db.position_y / scale)
+	if rel_type == "f" then
+		rel_frame:AnchorFrameToFirstUnit(self, classification_db.anchor, classification_db.relative_point, classification-db.position_x / scale, classification_db.position_y / scale) 
+	else
+		self:SetPoint(classification_db.anchor, rel_frame, classification_db.relative_point, classification_db.position_x / scale, classification_db.position_y / scale)
+	end
 end
 SingletonUnitFrame.RefixSizeAndPosition = PitBull4:OutOfCombatWrapper(SingletonUnitFrame.RefixSizeAndPosition)
 

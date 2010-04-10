@@ -83,7 +83,7 @@ local DATABASE_DEFAULTS = {
 			['**'] = {
 				enabled = false,
 				anchor = "CENTER",
-				relative_to = "UIParent",
+				relative_to = "0", -- UIParent
 				relative_point = "CENTER",
 				position_x = 0,
 				position_y = 0,
@@ -115,7 +115,7 @@ local DATABASE_DEFAULTS = {
 				use_pet_header = nil,
 				
 				anchor = "", -- automatic from growth direction
-				relative_to = "UIParent",
+				relative_to = "0", -- UIParent
 				relative_point = "CENTER",
 				position_x = 0,
 				position_y = 0,
@@ -391,6 +391,13 @@ PitBull4.unit_id_to_guid = unit_id_to_guid
 -- A dictionary of GUID to a set of UnitIDs for non-wacky units
 local guid_to_unit_ids = {}
 PitBull4.guid_to_unit_ids = guid_to_unit_ids
+
+-- A list of frames that need to be anchored because their relative frame
+-- did not exist when we tried to anchor them.  The key is the frame and the
+-- value is the relative_to value, see the documentation for Utils.GetRelativeFrame()
+-- for the details of the relative_to value.
+local frames_to_anchor = {}
+PitBull4.frames_to_anchor = frames_to_anchor
 
 local function get_best_unit(guid)
 	if not guid then
@@ -1422,6 +1429,30 @@ timerFrame:SetScript("OnUpdate",function(self, elapsed)
 		timer = timer - wacky_update_rate
 	end
 end)
+
+-- Watch for custom anchors that may not be created until after
+-- the frame is created.
+local anchor_elapsed = 0
+local anchor_timer = CreateFrame("Frame")
+anchor_timer:Hide()
+anchor_timer:SetScript("OnUpdate",function(self, elapsed)
+	anchor_elapsed = anchor_elapsed + elapsed
+	if anchor_elapsed >= 0.2 then
+		for frame, relative_to in pairs(frames_to_anchor) do
+			if relative_to:sub(1,1) == "~" then
+				local relative_name = relative_to:sub(2)
+				if relative_name and _G[relative_name] then
+					frame:RefixSizeAndPosition()
+				end
+			end
+		end
+		anchor_elapsed = 0
+		if not next(frames_to_anchor) then
+			anchor_timer:Hide()
+		end
+	end
+end)
+PitBull4.anchor_timer = anchor_timer
 
 --- Iterate over all wacky frames, and call their respective :UpdateGUID methods.
 -- @usage PitBull4:CheckWackyFramesForGUIDUpdate()

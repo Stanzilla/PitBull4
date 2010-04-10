@@ -630,11 +630,54 @@ function PitBull4.Options.get_unit_options()
 		desc = L["Frame which the unit frame is placed relative to."],
 		order = next_order(),
 		type = 'select',
-		get = get,
+		width = 'double',
+		get = function(info)
+			local value = get(info)
+			if string.sub(value,1,1) == "~" then
+				return "~"
+			end
+			return value
+		end,
 		set = set_with_refresh_layout,
-		values = {
-			["UIParent"] = L["Game window"],
-		},
+		values = function(info)
+			-- See the documentation for the PitBull4.Utils.GetRelativeFrame
+			-- for a list of the prefixes used in this field.
+			local current = get_db(info[1])
+			local t = {}
+			t["0"] = L["Game window"]
+			t["~"] = L["Custom"]
+			for unit, unit_db in pairs(PitBull4.db.profile.units) do
+				if unit_db ~= current and unit_db.enabled then
+					t["S"..unit] = unit
+				end
+			end
+			for group, group_db in pairs(PitBull4.db.profile.groups) do
+				if group_db ~= current and group_db.enabled then
+					t["g"..group] = group .. ' ' .. L["(entire group)"]
+					t["f"..group] = group .. ' ' .. L["(first frame)"]
+				end
+			end
+			return t
+		end,
+	}
+
+	shared_position_args.custom_relative_to = {
+		name = L["Custom relative to"],
+		desc = L["Name of the frame you wish to anchor to."],
+		order = next_order(),
+		type = 'input',
+		get = function(info)
+			return string.sub(get_db(info[1]).relative_to,2)
+		end,
+		set = function(info, value)
+			local type = info[1]
+
+			get_db(type).relative_to = "~"..value
+			refresh_layout(type)
+		end,
+		hidden = function(info)
+			return string.sub(get_db(info[1]).relative_to,1,1) ~= "~"
+		end,
 	}
 
 	shared_position_args.relative_point = {
