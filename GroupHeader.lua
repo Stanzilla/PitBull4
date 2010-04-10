@@ -122,17 +122,18 @@ local MemberUnitFrame__scripts = PitBull4.MemberUnitFrame__scripts
 
 --- Force an update on the group header.
 -- This is just a wrapper for SecureGroupHeader_Update.
+-- @param force the update to happen now
 -- @usage header:Update()
-function GroupHeader:Update()
+function GroupHeader:Update(force)
 	local shown = self:IsShown()
 	-- We can't directly call SecureGroupHeader_Update so we just
 	-- set an attribute back to iself.  Calling SecureGroupHeader_Update
 	-- directly taints the entire template system and is very bad.
-	if not shown then
+	if not shown and force then
 		self:Show()
 	end
 	self:SetAttribute("maxColumns",self:GetAttribute("maxColumns"))
-	if not shown then
+	if not shown and force then
 		self:Hide()
 	end
 end
