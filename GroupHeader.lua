@@ -1356,7 +1356,7 @@ function MemberUnitFrame__scripts:OnDragStop()
 	if anchor == "" then
 		anchor = DIRECTION_TO_GROUP_ANCHOR_POINT[db.direction]
 	end
-	local relative_frame = _G[db.relative_to]
+	local relative_frame = PitBull4.Utils.GetRelativeFrame(db.relative_to)
 	local relative_point = db.relative_point
 	local frame = header[1]
 	

@@ -262,7 +262,7 @@ function SingletonUnitFrame__scripts:OnDragStop()
 	
 	local db = self.classification_db
 	local anchor = db.anchor
-	local relative_frame = _G[db.relative_to]
+	local relative_frame = PitBull4.Utils.GetRelativeFrame(db.relative_to)
 	local relative_point = db.relative_point
 
 	local ui_scale = UIParent:GetEffectiveScale()
