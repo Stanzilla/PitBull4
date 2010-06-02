@@ -616,7 +616,7 @@ function SingletonUnitFrame:RefixSizeAndPosition()
 	local scale = self:GetEffectiveScale() / UIParent:GetEffectiveScale()
 	self:ClearAllPoints()
 	if rel_type == "f" then
-		rel_frame:AnchorFrameToFirstUnit(self, classification_db.anchor, classification_db.relative_point, classification-db.position_x / scale, classification_db.position_y / scale) 
+		rel_frame:AnchorFrameToFirstUnit(self, classification_db.anchor, classification_db.relative_point, classification_db.position_x / scale, classification_db.position_y / scale) 
 	else
 		self:SetPoint(classification_db.anchor, rel_frame, classification_db.relative_point, classification_db.position_x / scale, classification_db.position_y / scale)
 	end
