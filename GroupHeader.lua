@@ -399,8 +399,8 @@ function GroupHeader:RefixSizeAndPosition()
 	local super_unit_group = self.super_unit_group
 	local config_mode = PitBull4.config_mode
 
-	updated = self:ProxySetAttribute('unitWidth',unit_width)
-	updated = self:ProxySetAttribute('unitHeight',unit_height)
+	updated = self:ProxySetAttribute('unitWidth',unit_width) or updated
+	updated = self:ProxySetAttribute('unitHeight',unit_height) or updated
 
 	-- Limit the number of frames to the config mode for raid
 	if config_mode and config_mode:sub(1,4) == "raid" and super_unit_group == "raid" then
