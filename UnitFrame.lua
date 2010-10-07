@@ -474,7 +474,6 @@ function PitBull4:ConvertIntoUnitFrame(frame, isExampleFrame)
 	end
 	
 	self.all_frames[frame] = true
-	_G.ClickCastFrames[frame] = true
 	table.insert(self.all_frames_list, frame)
 	
 	self.classification_to_frames[frame.classification][frame] = true
@@ -487,8 +486,14 @@ function PitBull4:ConvertIntoUnitFrame(frame, isExampleFrame)
 	end
 	
 	if frame.is_singleton then
+		_G.ClickCastFrames[frame] = true
 		self.singleton_frames[frame] = true
 	else
+		if not PitBull4.CataClique then
+			-- member unit frames are handled differently in cata.
+			-- See the initialConfigFunction attribute on the GroupHeader.
+			_G.ClickCastFrames[frame] = true
+		end
 		self.member_frames[frame] = true
 	end
 	
