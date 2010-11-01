@@ -146,10 +146,10 @@ function PitBull4:MakeSingletonFrame(classification)
 	
 	frame:UpdateGUID(UnitGUID(unit))
 
-	for frame, relative_to in pairs(frames_to_anchor) do
+	for frame_to_anchor, relative_to in pairs(frames_to_anchor) do
 		local relative_frame = PitBull4.Utils.GetRelativeFrame(relative_to)
 		if relative_frame == frame then
-			frame:RefixSizeAndPosition()
+			frame_to_anchor:RefixSizeAndPosition()
 		end
 	end
 end
