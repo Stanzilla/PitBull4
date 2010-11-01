@@ -450,7 +450,6 @@ function UnitFrame__scripts:OnAttributeChanged(key, value)
 			PitBull4.unit_id_to_frames_with_wacky[old_unit][self] = nil
 		end
 	
-		local guid
 		self.unit = new_unit
 		if new_unit then
 			PitBull4.unit_id_to_frames[new_unit][self] = true
@@ -470,10 +469,7 @@ function UnitFrame__scripts:OnAttributeChanged(key, value)
 				end
 				PitBull4.non_wacky_frames[self] = true
 			end
-			guid = UnitGUID(new_unit)
 		end
-
-		self:UpdateGUID(guid)
 	elseif key == "state-unitexists" then
 		if value then
 			UnitFrame__scripts.OnShow(self)
