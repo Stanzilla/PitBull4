@@ -451,7 +451,7 @@ function UnitFrame__scripts:OnAttributeChanged(key, value)
 		end
 	
 		self.unit = new_unit
-		if new_unit then
+		if new_unit and self.is_singleton then
 			PitBull4.unit_id_to_frames[new_unit][self] = true
 			PitBull4.unit_id_to_frames_with_wacky[new_unit][self] = true
 			local is_wacky = PitBull4.Utils.IsWackyUnitGroup(new_unit)
