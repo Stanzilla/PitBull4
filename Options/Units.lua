@@ -87,7 +87,9 @@ function PitBull4.Options.get_unit_options()
 			
 			if get_unit_db().enabled then
 				PitBull4:MakeSingletonFrame(CURRENT_UNIT)
-				PitBull4:RecheckConfigMode()
+				for frame in PitBull4:IterateFramesForClassification(CURRENT_UNIT, true) do
+					frame:RecheckConfigMode()
+				end
 			end
 		end,
 		validate = validate_unit,
@@ -140,7 +142,9 @@ function PitBull4.Options.get_unit_options()
 			
 			if get_group_db().enabled then
 				PitBull4:MakeGroupHeader(CURRENT_GROUP)
-				PitBull4:RecheckConfigMode()
+				for header in PitBull4:IterateHeadersForName(CURRENT_GROUP) do
+					header:RecheckConfigMode()
+				end
 			end
 		end,
 		validate = validate_group,
@@ -255,10 +259,12 @@ function PitBull4.Options.get_unit_options()
 			-- when the frame is force_shown. 
 			if value then
 				PitBull4:MakeSingletonFrame(CURRENT_UNIT)
-				PitBull4:RecheckConfigMode()
-			else
-				PitBull4:RecheckConfigMode()
 				for frame in PitBull4:IterateFramesForClassification(CURRENT_UNIT, true) do
+					frame:RecheckConfigMode()
+				end
+			else
+				for frame in PitBull4:IterateFramesForClassification(CURRENT_UNIT, true) do
+					frame:RecheckConfigMode()
 					frame:Deactivate()
 				end
 			end
@@ -276,12 +282,11 @@ function PitBull4.Options.get_unit_options()
 			get_unit_db().enabled = false
 
 			for frame in PitBull4:IterateFramesForClassification(CURRENT_UNIT, true) do
+				frame:RecheckConfigMode()
 				frame:Deactivate()
 			end
 
 			PitBull4.db.profile.units[CURRENT_UNIT] = nil
-
-			PitBull4:RecheckConfigMode()
 		end,
 		disabled = function(info)
 			if next(PitBull4.db.profile.units) == CURRENT_UNIT and not next(PitBull4.db.profile.units, CURRENT_UNIT) then
@@ -308,9 +313,8 @@ function PitBull4.Options.get_unit_options()
 			for header in PitBull4:IterateHeadersForName(CURRENT_GROUP) do
 				header:RefreshGroup()
 				header:UpdateShownState()
+				header:RecheckConfigMode()
 			end
-			
-			PitBull4:RecheckConfigMode()
 		end,
 		disabled = disabled,
 	}
@@ -325,11 +329,10 @@ function PitBull4.Options.get_unit_options()
 			for header in PitBull4:IterateHeadersForName(CURRENT_GROUP) do
 				header.group_db.enabled = false
 				header:Hide()
+				header:RecheckConfigMode()
 			end
 			
 			PitBull4.db.profile.groups[CURRENT_GROUP] = nil
-			
-			PitBull4:RecheckConfigMode()
 		end,
 		disabled = function(info)
 			if next(PitBull4.db.profile.groups) == CURRENT_GROUP and not next(PitBull4.db.profile.groups, CURRENT_GROUP) then
