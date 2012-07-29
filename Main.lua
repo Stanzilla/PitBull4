@@ -2,6 +2,7 @@
 local L = LibStub("AceLocale-3.0"):GetLocale("PitBull4")
 
 local cata_400 = select(4,GetBuildInfo()) >= 40000
+local mop_500 = select(4,GetBuildInfo()) >= 50000
 
 local SINGLETON_CLASSIFICATIONS = {
 	"player",
@@ -1417,9 +1418,13 @@ function PitBull4:OnEnable()
 	-- enter/leave combat for :RunOnLeaveCombat
 	self:RegisterEvent("PLAYER_REGEN_ENABLED")
 	self:RegisterEvent("PLAYER_REGEN_DISABLED")
-	
-	self:RegisterEvent("RAID_ROSTER_UPDATE")
-	self:RegisterEvent("PARTY_MEMBERS_CHANGED")
+
+	if not mop_500 then
+		self:RegisterEvent("RAID_ROSTER_UPDATE", "GROUP_ROSTER_UPDATE")
+		self:RegisterEvent("PARTY_MEMBERS_CHANGED", "GROUP_ROSTER_UPDATE")
+	else
+		self:RegisterEvent("GROUP_ROSTER_UPDATE")
+	end
 	
 	self:RegisterEvent("PLAYER_ENTERING_WORLD")
 	self:RegisterEvent("PLAYER_LEAVING_WORLD")
@@ -1703,10 +1708,9 @@ function PitBull4:PLAYER_ENTERING_WORLD()
 	refresh_all_guids()
 end
 
-function PitBull4:RAID_ROSTER_UPDATE()
+function PitBull4:GROUP_ROSTER_UPDATE()
 	refresh_all_guids()
 end
-PitBull4.PARTY_MEMBERS_CHANGED = PitBull4.RAID_ROSTER_UPDATE
 
 do
 	local in_combat = false
