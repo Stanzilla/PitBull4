@@ -406,8 +406,8 @@ function GroupHeader:RefixSizeAndPosition()
 	-- Limit the number of frames to the config mode for raid
 	if config_mode and config_mode:sub(1,4) == "raid" and super_unit_group == "raid" then
 		if config_mode == "raid" then
-			if max > 5 then
-				max = 5
+			if max > MEMBERS_PER_RAID_GROUP then
+				max = MEMBERS_PER_RAID_GROUP
 			end
 		elseif config_mode:sub(1,4) == "raid" then
 			local num = config_mode:sub(5)+0 -- raid10, raid25, raid40 => 10, 25, 40
@@ -896,8 +896,8 @@ function GroupHeader:AssignFakeUnitIDs()
 	-- Limit the number of frames to the config mode for raid
 	if config_mode and config_mode:sub(1,4) == "raid" and super_unit_group == "raid" then
 		if config_mode == "raid" then
-			if finish > 5 then
-				finish = 5
+			if finish > MEMBERS_PER_RAID_GROUP then
+				finish = MEMBERS_PER_RAID_GROUP
 			end
 		elseif config_mode:sub(1,4) == "raid" then
 			local num = config_mode:sub(5)+0 -- raid10, raid25, raid40 => 10, 25, 40
