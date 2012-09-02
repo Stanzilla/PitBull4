@@ -815,24 +815,15 @@ function SingletonUnitFrame:Deactivate()
 end
 SingletonUnitFrame.Deactivate = PitBull4:OutOfCombatWrapper(SingletonUnitFrame.Deactivate)
 
-function UnitFrame:RecheckConfigMode()
-	if PitBull4.config_mode and self.classification_db.enabled then
-		self:ForceShow()
-	else
-		self:UnforceShow()
-	end
-	self:Update(true, true)
-end
-
-function UnitFrame:ForceShow()
+function SingletonUnitFrame:ForceShow()
 	if not self.force_show then
 		self.force_show = true
 		self:SetAttribute("config_mode", true)
 	end
 end
-UnitFrame.ForceShow = PitBull4:OutOfCombatWrapper(UnitFrame.ForceShow)
+SingletonUnitFrame.ForceShow = PitBull4:OutOfCombatWrapper(SingletonUnitFrame.ForceShow)
 
-function UnitFrame:UnforceShow()
+function SingletonUnitFrame:UnforceShow()
 	if not self.force_show then
 		return
 	end
@@ -845,7 +836,16 @@ function UnitFrame:UnforceShow()
 		self:Update()
 	end
 end
-UnitFrame.UnforceShow = PitBull4:OutOfCombatWrapper(UnitFrame.UnforceShow)
+SingletonUnitFrame.UnforceShow = PitBull4:OutOfCombatWrapper(SingletonUnitFrame.UnforceShow)
+
+function UnitFrame:RecheckConfigMode()
+	if PitBull4.config_mode and self.classification_db.enabled then
+		self:ForceShow()
+	else
+		self:UnforceShow()
+	end
+	self:Update(true, true)
+end
 
 function UnitFrame:Rename(name)
 	local old_name = self.classification
