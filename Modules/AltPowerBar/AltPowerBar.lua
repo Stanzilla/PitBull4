@@ -21,6 +21,7 @@ PitBull4_AltPowerBar:SetDefaults({
 function PitBull4_AltPowerBar:OnEnable()
 	self:RegisterEvent("UNIT_POWER_BAR_SHOW")
 	self:RegisterEvent("UNIT_POWER_BAR_HIDE", "UNIT_POWER_BAR_SHOW")
+	self:RegisterEvent("UNIT_DISPLAYPOWER", "UNIT_POWER_BAR_SHOW")
 	self:RegisterEvent("PLAYER_ENTERING_WORLD")
 	self:RegisterEvent("UNIT_POWER")
 	self:RegisterEvent("UNIT_MAXPOWER", "UNIT_POWER")
