@@ -5,36 +5,7 @@ local L = PitBull4.L
 local DEBUG = PitBull4.DEBUG
 local expect = PitBull4.expect
 local frames_to_anchor = PitBull4.frames_to_anchor
-local cata_400 = select(4,GetBuildInfo()) >= 40000
 
-local mop_500 = select(4,GetBuildInfo()) >= 50000
-local IsInGroup = IsInGroup
-local IsInRaid = IsInRaid
-local UnitIsGroupLeader = UnitIsGroupLeader
-local UnitIsGroupAssistant = UnitIsGroupAssistant
-if not mop_500 then
-	IsInGroup = function()
-		return GetNumPartyMembers() > 0
-	end
-	IsInRaid = function()
-		return GetNumRaidMembers() > 0
-	end
-	UnitIsGroupLeader = function(unit)
-		-- shortcutted probably should support full range of functionality
-		-- but I don't need it for now.
-		if unit == "player" then
-			return IsPartyLeader()
-		end
-	end
-	UnitIsGroupAssistant = function(unit)
-		-- shortcutted probably should support full range of functionality
-		-- but I don't need it for now.
-		if unit == "player" then
-			return IsRaidOfficer()
-		end
-	end
-
-end
 local mop_520 = select(4,GetBuildInfo()) >= 50200
 
 -- CONSTANTS ----------------------------------------------------------------
@@ -676,7 +647,7 @@ function PitBull4:ConvertIntoUnitFrame(frame, isExampleFrame)
 			frame:RegisterForClicks("AnyUp")
 			frame:SetAttribute("*type1", "target")
 			frame:SetAttribute("*type2", mop_520 and "togglemenu" or "menu")
-		elseif cata_400 and not ClickCastHeader then
+		elseif not ClickCastHeader then
 			-- if we can't set attributes directly and Clique isn't running
 			-- then RegisterForClicks upon leaving combat.  Works around
 			-- the lack of RegisterForClicks in the RestrictedFrames environment
@@ -805,7 +776,7 @@ SingletonUnitFrame.RefixSizeAndPosition = PitBull4:OutOfCombatWrapper(SingletonU
 -- @usage frame:Activate()
 function SingletonUnitFrame:Activate()
 	RegisterUnitWatch(self, true)
-	RegisterStateDriver(self, "pb4visibility", mop_500 and "[petbattle] hide; default" or "default")
+	RegisterStateDriver(self, "pb4visibility", "[petbattle] hide; default")
 end
 SingletonUnitFrame.Activate = PitBull4:OutOfCombatWrapper(SingletonUnitFrame.Activate)
 
