@@ -628,6 +628,63 @@ function PitBull4.Options.get_unit_options()
 		end,
 	}
 
+	local function is_prefix_of_type(type, relative_type)
+		if type == "units" then
+			return relative_type == "S"
+		elseif type == "groups" then
+			return relative_type == "g" or relative_type == 'f'
+		else
+			error("Unknown type")
+		end
+	end
+
+	local function is_relative_to_self(type, relative_to)
+		-- See PitBull4.Utils.GetRelativeFrame for the documentation
+		-- of the relative type which is the first character of the
+		-- relative_to field.
+
+		-- No relative_to, can't be true
+		if not relative_to then return false end
+
+		local relative_type = relative_to:sub(1,1)
+		local relative_suffix = relative_to:sub(2)
+
+		-- If the type matches check if it is the same as the current
+		-- unit or group.
+		if is_prefix_of_type(type, relative_type) then
+			if type == "units" then
+				if relative_suffix == CURRENT_UNIT then
+					return true
+				end
+			elseif type == "groups" then
+				if relative_suffix == CURRENT_GROUP then
+					return true
+				end
+			end
+		end
+
+		-- Didn't match but need to recurse to see if the unit 
+		-- this depends on points at another unit that depends on this
+		-- unit.
+		local type_db
+		if is_prefix_of_type("units", relative_type) then
+			type_db = PitBull4.db.profile.units
+		elseif is_prefix_of_type("groups", relative_type) then
+			type_db = PitBull4.db.profile.groups
+		else
+			-- relative type not one we can recurse
+			return false
+		end
+
+		local relative_db = type_db[relative_suffix]
+		if relative_db then
+			return is_relative_to_self(type, relative_db.relative_to)
+		end
+
+		-- Something went wrong
+		return false 
+	end
+
 	shared_position_args.relative_to = {
 		name = L["Relative to"],
 		desc = L["Frame which the unit frame is placed relative to."],
@@ -650,12 +707,12 @@ function PitBull4.Options.get_unit_options()
 			t["0"] = L["Game window"]
 			t["~"] = L["Custom"]
 			for unit, unit_db in pairs(PitBull4.db.profile.units) do
-				if unit_db ~= current and unit_db.enabled then
+				if unit_db ~= current and unit_db.enabled and not is_relative_to_self(info[1], unit_db.relative_to) then
 					t["S"..unit] = unit
 				end
 			end
 			for group, group_db in pairs(PitBull4.db.profile.groups) do
-				if group_db ~= current and group_db.enabled then
+				if group_db ~= current and group_db.enabled and not is_relative_to_self(info[1], group_db.relative_to) then
 					t["g"..group] = group .. ' ' .. L["(entire group)"]
 					t["f"..group] = group .. ' ' .. L["(first frame)"]
 				end
@@ -677,6 +734,16 @@ function PitBull4.Options.get_unit_options()
 
 			get_db(type).relative_to = "~"..value
 			refresh_layout(type)
+		end,
+		validate = function(info, value)
+			if not value then return true end
+			local prefix = value:sub(1,16)
+			-- Don't allow our frames to be custom anchor points to avoid
+			-- allowing people to break us by creating circular links 
+			if prefix == "PitBull4_Groups_" or prefix == "PitBull4_Frames_" then
+				return L["Cannot set PitBull4 frames as custom relative to"] 
+			end
+			return true
 		end,
 		hidden = function(info)
 			return string.sub(get_db(info[1]).relative_to,1,1) ~= "~"
