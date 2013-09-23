@@ -331,6 +331,33 @@ function PitBull4.Options.get_unit_options()
 			refresh_vehicle(info[1])
 		end
 	end
+	local function set_with_swap_template(info, value)
+		if set(info, value) then
+			PitBull4:SwapGroupTemplate(CURRENT_GROUP)
+		end
+	end
+
+	unit_args.name = {
+		name = L["Name"],
+		desc = function(info)
+			return L["Rename the '%s' unit frame."]:format(CURRENT_UNIT)
+		end,
+		type = 'input',
+		order = next_order(),
+		get = function(info)
+			return CURRENT_UNIT
+		end,
+		set = function(info, value)
+			PitBull4.db.profile.units[value], PitBull4.db.profile.units[CURRENT_UNIT] = PitBull4.db.profile.units[CURRENT_UNIT], nil
+			local old_name = CURRENT_UNIT
+			CURRENT_UNIT = value
+
+			for frame in PitBull4:IterateFramesForClassification(old_name, true) do
+				frame:Rename(CURRENT_UNIT)
+			end
+		end,
+		validate = validate_unit,
+	}
 	
 	group_args.name = {
 		name = L["Name"],
@@ -367,11 +394,7 @@ function PitBull4.Options.get_unit_options()
 			return t
 		end,
 		get = get,
-		set = function(info,value)
-			if set(info, value) then
-				PitBull4:SwapGroupTemplate(CURRENT_GROUP)
-			end
-		end,
+		set = set_with_swap_template,
 		disabled = disabled,
 		width = 'double',
 	}
@@ -777,11 +800,7 @@ function PitBull4.Options.get_unit_options()
 		get = function(info)
 			return not get(info)
 		end,
-		set = function(info,value)
-			if set(info, not value) then
-				PitBull4:SwapGroupTemplate(CURRENT_GROUP)
-			end
-		end,
+		set = set_with_swap_template,
 		disabled = disabled,
 		hidden = function(info)
 			local unit_group = get_group_db().unit_group
