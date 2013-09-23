@@ -215,40 +215,48 @@ end)
 local PitBull4_UnitFrame_DropDown = CreateFrame("Frame", "PitBull4_UnitFrame_DropDown", UIParent, "UIDropDownMenuTemplate")
 UnitPopupFrames[#UnitPopupFrames+1] = "PitBull4_UnitFrame_DropDown"
 
--- from a unit, figure out the proper menu and, if appropriate, the corresponding ID
+-- from a unit, figure out the proper menu and, if appropriate, the corresponding ID (updated from SECURE_ACTIONS.togglemenu)
 local function figure_unit_menu(unit)
-	if unit == "focus" then
-		return "FOCUS"
+	local unitType = string.match(unit, "^([a-z]+)[0-9]+$") or unit
+
+	-- Mimic the default UI and prefer the relevant units menu when possible
+	local menu, id = "PLAYER", nil
+	if unitType == "raid" then
+		menu = "RAID"
+	elseif unitType == "party" then
+		menu = "PARTY"
+	elseif unitType == "boss" then
+		menu = "BOSS"
+	elseif unitType == "focus" then
+		menu = "FOCUS"
+	elseif unitType == "arenapet" or unitType == "arena" then
+		menu = "ARENAENEMY"
+	-- Then try and detect the unit type and show the most relevant menu we can find
+	elseif UnitIsUnit(unit, "player") then
+		menu = "SELF"
+	elseif UnitIsUnit(unit, "vehicle") then
+		menu = "VEHICLE"
+	elseif UnitIsUnit(unit, "pet") then
+		menu = "PET"
+	elseif UnitIsOtherPlayersBattlePet(unit) then
+		menu = "OTHERBATTLEPET"
+	elseif UnitIsOtherPlayersPet(unit) then
+		menu = "OTHERPET"
+	-- Last ditch checks
+	elseif UnitIsPlayer(unit) then
+		id = UnitInRaid(unit)
+		if ( id ) then
+			menu = "RAID_PLAYER"
+		elseif UnitInParty(unit) then
+			menu = "PARTY"
+		else
+			menu = "PLAYER"
+		end
+	elseif UnitIsUnit(unit, "target") then
+		menu = "TARGET"
 	end
 
-	if UnitIsUnit(unit, "player") then
-		return "SELF"
-	end
-
-	if UnitIsUnit(unit, "vehicle") then
-		-- NOTE: vehicle check must come before pet check for accuracy's sake because
-		-- a vehicle may also be considered your pet
-		return "VEHICLE"
-	end
-
-	if UnitIsUnit(unit, "pet") then
-		return "PET"
-	end
-
-	if not UnitIsPlayer(unit) then
-		return "TARGET"
-	end
-
-	local id = UnitInRaid(unit)
-	if id then
-		return "RAID_PLAYER", id
-	end
-
-	if UnitInParty(unit) then
-		return "PARTY"
-	end
-
-	return "PLAYER"
+	return menu, id
 end
 
 local munged_unit_menus = {}
@@ -958,7 +966,6 @@ function UnitFrame:Update(same_guid, update_layout)
 	end
 	
 	local changed = update_layout
-	
 	for _, module_type in ipairs(MODULE_UPDATE_ORDER) do
 		for _, module in PitBull4:IterateModulesOfType(module_type) do
 			changed = module:Update(self, true, same_guid) or changed
