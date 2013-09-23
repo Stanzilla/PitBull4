@@ -43,7 +43,7 @@ function PitBull4:MakeGroupHeader(group)
 		if group_based then
 			template = use_pet_header and "SecureGroupPetHeaderTemplate" or "SecureGroupHeaderTemplate"
 		end
-		header = CreateFrame("Frame", header_name, UIParent, template)
+		header = CreateFrame("Frame", header_name, UIParent, template or "SecureFrameTemplate")
 		header:Hide() -- it will be shown later and attributes being set won't cause lag
 
 		header.name = group
@@ -1759,6 +1759,11 @@ function PitBull4:ConvertIntoGroupHeader(header)
 		header[k] = v
 	end
 
+	if ClickCastHeader then
+		SecureHandler_OnLoad(header)
+		header:SetFrameRef("clickcast_header", ClickCastHeader)
+	end
+
 	if header.group_based then
 		-- Stop the group header from listening to UNIT_NAME_UPDATE.
 		-- Allowing it to do so is a huge performance drain since the
@@ -1769,11 +1774,6 @@ function PitBull4:ConvertIntoGroupHeader(header)
 		-- stuttering isseus with BGs.  See this post for more details:
 		-- http://forums.wowace.com/showthread.php?p=111494#post111494
 		header:UnregisterEvent("UNIT_NAME_UPDATE")
-
-		if ClickCastHeader then
-			SecureHandler_OnLoad(header)
-			header:SetFrameRef("clickcast_header", ClickCastHeader)
-		end
 
 		-- this is done to pass self in properly
 		function header.initialConfigFunction(...)
@@ -1815,7 +1815,9 @@ function PitBull4:ConvertIntoGroupHeader(header)
 			header.unitsuffix = unit_group:sub(6)
 
 			header:RegisterEvent("UPDATE_BATTLEFIELD_STATUS")
+			header:RegisterEvent("ARENA_OPPONENT_UPDATE")
 		end
+		header:RegisterEvent("UNIT_NAME_UPDATE")
 
 		if header.unitsuffix == "" then
 			header.unitsuffix = nil
@@ -1844,9 +1846,9 @@ function PitBull4:ConvertIntoGroupHeader(header)
 				frame:SetAttribute("unit", unit)
 				frame:SetAttribute("unitsuffix", unitsuffix)
 
-				frame:SetScript("OnEvent", frame_OnEvent)
-				frame:RegisterUnitEvent("UNIT_NAME_UPDATE", unit)
-				frame:RegisterUnitEvent("ARENA_OPPONENT_UPDATE", unit)
+				--frame:SetScript("OnEvent", frame_OnEvent)
+				--frame:RegisterUnitEvent("UNIT_NAME_UPDATE", unit)
+				--frame:RegisterUnitEvent("ARENA_OPPONENT_UPDATE", unit)
 
 				frame:WrapScript(frame, "OnAttributeChanged", [[
           if name == "config_mode" and self:GetAttribute("config_mode") then
@@ -1946,12 +1948,16 @@ function GroupHeader:PositionMembers()
 		frame:SetAttribute("unit", unit)
 		if old_unit ~= unit then
 			-- update our unit event references
-			frame:UnregisterEvent("UNIT_NAME_UPDATE")
-			frame:UnregisterEvent("ARENA_OPPONENT_UPDATE")
-			frame:RegisterUnitEvent("UNIT_NAME_UPDATE", unit)
-			frame:RegisterUnitEvent("ARENA_OPPONENT_UPDATE", unit)
+			--frame:UnregisterEvent("UNIT_NAME_UPDATE")
+			--frame:UnregisterEvent("ARENA_OPPONENT_UPDATE")
+			--frame:RegisterUnitEvent("UNIT_NAME_UPDATE", unit)
+			--frame:RegisterUnitEvent("ARENA_OPPONENT_UPDATE", unit)
 
 			frame:Update()
+		end
+		local classification_db = frame.classification_db
+		if classification_db then
+			frame:SetClickThroughState(classification_db.click_through)
 		end
 
 		current_anchor = frame
