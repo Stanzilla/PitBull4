@@ -1,6 +1,6 @@
 local PitBull4 = select(2, ...)
 
-PitBull4.DEBUG = true
+PitBull4.DEBUG = false
 
 local function is_list(t)
 	local n = #t
