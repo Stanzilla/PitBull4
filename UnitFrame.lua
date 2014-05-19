@@ -530,16 +530,6 @@ function UnitFrame__scripts:OnAttributeChanged(key, value)
 			end
 		end
 
-		-- Hackaround Clique forcing the frames to use togglemenu, which
-		-- is broken on raid frames.  Idea borrowed from ShadowedUF
-		if new_unit and new_unit:sub(1, 4) == "raid" then
-			self:WrapScript(self, "OnAttributeChanged", [[
-        if value == "togglemenu" and self:GetAttribute("clique-shiv") == "1" then
-          self:SetAttribute(name, "menu")
-        end
-      ]])
-		end
-
 		if not updated then
 			self:Update(false)
 		end

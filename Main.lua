@@ -195,6 +195,7 @@ local DATABASE_DEFAULTS = {
 			},
 		},
 		class_order = {},
+		role_order = { "TANK", "HEALER", "DAMAGER", "NONE" },
 	}
 }
 for class, color in pairs(RAID_CLASS_COLORS) do
@@ -909,7 +910,7 @@ function PitBull4:IterateHeadersForUnitGroup(unit_group)
 		return do_nothing
 	end
 	
-	return not also_hidden and iterate_shown_frames or half_next, headers
+	return iterate_shown_frames or half_next, headers
 end
 
 --- Iterate over all headers with the given super-classification.
@@ -929,7 +930,7 @@ function PitBull4:IterateHeadersForSuperUnitGroup(super_unit_group)
 		return do_nothing
 	end
 	
-	return not also_hidden and iterate_shown_frames or half_next, headers
+	return iterate_shown_frames or half_next, headers
 end
 
 local function return_same(object, key)
@@ -991,26 +992,8 @@ function PitBull4:CallMethodOnModules(method_name, ...)
 	end
 end
 
--- variable to hold the AceTimer3 repeating timer we use to catch the first
--- main tank list update that oRA doesn't bother to generate an event for.
-local main_tank_timer
-
--- Callback for when the main tank list updates from oRA or CTRA
+-- Callback for when the main tank list updates from oRA
 function PitBull4.OnTanksUpdated()
-	if oRA and not oRA.maintanktable then
-		-- if oRA is loaded but there's no maintanktable that means oRA isn't
-		-- fully loaded.  
-		if not main_tank_timer then
-			-- No timer so we start one.
-			main_tank_timer = PitBull4:ScheduleRepeatingTimer(PitBull4.OnTanksUpdated,1)
-		end
-		-- No main tank list means nothing to do.
-		return
-	else
-		-- We have the list, can cancel the timer and normal events will work
-		-- from now on.
-		PitBull4:CancelTimer(main_tank_timer, true)
-	end
 	for header in PitBull4:IterateHeadersForSuperUnitGroup("raid") do
 		local group_db = header.group_db
 		if group_db and group_db.group_filter == "MAINTANK" then
@@ -1193,7 +1176,7 @@ function PitBull4:OnInitialize()
 	LoadAddOn("LibBossIDs-1.0", true)
 end
 
-local db_icon_done, ctra_done, ora2_done, ora3_done
+local db_icon_done, ora3_done
 function PitBull4:ADDON_LOADED()
 	if not PitBull4.LibDataBrokerLauncher then
 		local LibDataBroker = LibStub("LibDataBroker-1.1", true)
@@ -1231,23 +1214,8 @@ function PitBull4:ADDON_LOADED()
 		end
 	end
 
-	if not ctra_done and _G.CT_RAOptions_UpdateMTs then
-		hooksecurefunc("CT_RAOptions_UpdateMTs",PitBull4.OnTanksUpdated)
-		ctra_done = true
-	end
-
-	if not ora2_done and oRA then
-		LibStub("AceEvent-2.0"):RegisterEvent("oRA_MainTankUpdate",PitBull4.OnTanksUpdated)
-		-- We register for CoreEnabled to know when oRA loads it's LOD modules in particular
-		-- ParticipantMT so we can then set a timer to watch for the maintanktable to be
-		-- loaded from the savedvariables, because it doesn't bother to generate a
-		-- MainTankUpdate event for this.  *sigh*
-		LibStub("AceEvent-2.0"):RegisterEvent("oRA_CoreEnabled",PitBull4.OnTanksUpdated)
-		ora2_done = true
-	end
-
 	if not ora3_done and oRA3 then
-		oRA3.RegisterCallback(self,"OnTanksUpdated")
+		oRA3.RegisterCallback(self, "OnTanksUpdated")
 		self.OnTanksUpdated()
 		ora3_done = true
 	end
@@ -1392,6 +1360,7 @@ function PitBull4:OnProfileChanged()
 	self.PowerColors = db.profile.colors.power
 	self.ReactionColors = db.profile.colors.reaction
 	self.ClassOrder = db.profile.class_order
+	self.RoleOrder = db.profile.role_order
 	for i, v in ipairs(CLASS_SORT_ORDER) do
 		local found = false
 		for j, u in ipairs(self.ClassOrder) do
@@ -1720,7 +1689,7 @@ function PitBull4:ZONE_CHANGED_NEW_AREA()
 	-- When we change zones if we lose the vehicle we don't get events for it.
 	-- So we need to simulate the events for all the relevent units.
 	for unit in pairs(self.unit_id_to_guid) do
-		self:UNIT_EXITED_VEHICLE(_, unit)
+		self:UNIT_EXITED_VEHICLE(nil, unit)
 	end
 end
 

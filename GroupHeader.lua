@@ -265,10 +265,13 @@ do
 	for i = 1, NUM_RAID_GROUPS do
 		t[i] = i..""
 	end
-	GROUPING_ORDER.GROUP = table.concat(t, ',')
+	GROUPING_ORDER.GROUP = table.concat(t, ",")
 end
 GROUPING_ORDER.CLASS = function()
 	return table.concat(PitBull4.ClassOrder, ",")
+end
+GROUPING_ORDER.ASSIGNEDROLE = function()
+	return table.concat(PitBull4.RoleOrder, ",")
 end
 
 local function position_label(self, label)
@@ -475,8 +478,7 @@ function GroupHeader:RefixSizeAndPosition()
 	end
 
 	if not self.group_based then
-		-- reposition frames on the fake header
-		self:PositionMembers()
+		self:ConfigureChildren()
 	end
 
 	-- Check if the frame we will be anchoring to exists and if not
@@ -504,43 +506,6 @@ function GroupHeader:RefixSizeAndPosition()
 		rel_frame:AnchorFrameToFirstUnit(self, anchor, group_db.relative_point, group_db.position_x / scale, group_db.position_y / scale)
 	else
 		self:SetPoint(anchor, rel_frame, group_db.relative_point, group_db.position_x / scale, group_db.position_y / scale)
-	end
-end
-
-local function count_returns(...)
-	return select('#', ...)
-end
-
-local tank_list = {}
-local function get_main_tank_name_list()
-	local main_tanks
-	if oRA3 then
-		main_tanks = oRA3:GetSortedTanks()
-	elseif oRA then
-		main_tanks = oRA.maintanktable
-	else
-		main_tanks = CT_RA_MainTanks
-	end
-	if main_tanks then
-		wipe(tank_list)
-		for i = 1, 10 do
-			local v = main_tanks[i]
-			if v then
-				tank_list[#tank_list+1] = v
-			end
-		end
-		local s = table.concat(tank_list, ',')
-		if s ~= "" then
-			return s, #tank_list
-		end
-	end
-	if PitBull4.leaving_world or not UnitInRaid("player") or not UnitInParty("player") then
-		-- Not in a raid or a party, so no main tank list.  We have
-		-- to bail out here becuase WoW whines with a You are not in a party
-		-- message to the user now.  /sigh
-		return nil, 0
-	else
-		return nil, count_returns(GetPartyAssignment("MAINTANK"))
 	end
 end
 
@@ -586,11 +551,16 @@ function GroupHeader:RefreshGroup(dont_refresh_children)
 	if group_based then
 		show_solo = include_player and show_solo
 	end
-	local group_filter = not party_based and group_db.group_filter or nil
+	local group_filter = unit_group:sub(1, 4) == "raid" and group_db.group_filter or nil
 	local sort_direction = group_db.sort_direction
 	local sort_method = group_db.sort_method
 	local group_by = group_db.group_by
-	local name_list = group_filter == "MAINTANK" and get_main_tank_name_list() or nil
+	local name_list = nil
+	-- If using oRA3, override the MAINTANK groupFilter and use oRA3's tanks (even if empty)
+	if group_filter == "MAINTANK" and oRA3 then
+		local main_tanks = oRA3:GetSortedTanks()
+		name_list = table.concat(main_tanks, ",")
+	end
 
 	local changed_units = self.unit_group ~= unit_group or self.include_player ~= include_player or self.show_solo ~= show_solo or self.group_filter ~= group_filter or self.sort_direction ~= sort_direction or self.sort_method ~= sort_method or self.group_by ~= group_by or self.name_list ~= name_list or self.group_based ~= group_based
 
@@ -619,12 +589,16 @@ function GroupHeader:RefreshGroup(dont_refresh_children)
 			self:SetAttribute("showSolo", show_solo and true or nil)
 			self:SetAttribute("groupFilter", nil)
 		elseif not group_based then
+			self:UnregisterEvent("INSTANCE_ENCOUNTER_ENGAGE_UNIT")
+			self:UnregisterEvent("UPDATE_BATTLEFIELD_STATUS")
 			if unit_group:sub(1, 4) == "boss" then
 				self.super_unit_group = "boss"
 				self.unitsuffix = unit_group:sub(5)
+				self:RegisterEvent("INSTANCE_ENCOUNTER_ENGAGE_UNIT")
 			elseif unit_group:sub(1, 5) == "arena" then
 				self.super_unit_group = "arena"
 				self.unitsuffix = unit_group:sub(6)
+				self:RegisterEvent("UPDATE_BATTLEFIELD_STATUS")
 			end
 		else
 			self.super_unit_group = "raid"
@@ -887,10 +861,10 @@ end
 -- utility function for ApplyConfigModeState, it doctors
 -- up some data so don't reuse this elsewhere
 local function get_group_roster_info(super_unit_group, index)
-	local unit, name, subgroup, class_name, role, server, _
+	local _, unit, name, subgroup, class_name, role, server, assigned_role
 	if super_unit_group == "raid" then
 		unit = "raid"..index
-		name, _, subgroup, _, _, class_name, _, _, _, role = GetRaidRosterInfo(index)
+		name, _, subgroup, _, _, class_name, _, _, _, role, _, assigned_role = GetRaidRosterInfo(index)
 	elseif super_unit_group == "boss" then
 		unit = "boss"..index
 		if UnitExists(unit) then
@@ -902,7 +876,7 @@ local function get_group_roster_info(super_unit_group, index)
 		unit = "arena"..index
 		if UnitExists(unit) then
 			name, server = UnitName(unit)
-			if (server and server ~= "") then
+			if server and server ~= "" then
 				name = name.."-"..server
 			end
 			_, class_name = UnitClass(unit)
@@ -916,7 +890,7 @@ local function get_group_roster_info(super_unit_group, index)
 		end
 		if UnitExists(unit) then
 			name, server = UnitName(unit)
-			if (server and server ~= "") then
+			if server and server ~= "" then
 				name = name.."-"..server
 			end
 			_, class_name = UnitClass(unit)
@@ -925,10 +899,11 @@ local function get_group_roster_info(super_unit_group, index)
 			if not PitBull4.leaving_world and (UnitInParty(unit) or UnitInRaid(unit)) then
 				if GetPartyAssignment("MAINTANK", unit) then
 					role = "MAINTANK"
-				elseif  GetPartyAssignment("MAINASSIST", unit) then
+				elseif GetPartyAssignment("MAINASSIST", unit) then
 					role = "MAINASSIST"
 				end
 			end
+			assigned_role = UnitGroupRolesAssigned(unit)
 			subgroup = 1
 		end
 	end
@@ -940,7 +915,7 @@ local function get_group_roster_info(super_unit_group, index)
 		class_name = '!'
 	end
 
-	return unit, name, subgroup, class_name, role
+	return unit, name, subgroup, class_name, role, assigned_role
 end
 
 -- utility function for ApplyConfigModeState
@@ -1033,12 +1008,11 @@ end
 
 -- ApplyConfigModeState adjusts the member frames of a GroupHeader to allow
 -- them to function in config mode. It generates a bunch of fake unit ids
--- for frames being show in config mode.  It also positions the frames (since
--- 4.0.3 WoW removes the anchors from hidden frames).  It's largely a rework
--- of SecureGroupHeader_Update for our purposes.  We need to generate unit ids
--- in roughly the same order that the group header would for real frames but we
--- want the fake units to always be after the real units.  Sadly that makes
--- this code pretty downright ugly.
+-- for frames being show in config mode.  It also positions the frames. It's
+-- largely a rework of SecureGroupHeader_Update for our purposes.  We need to
+-- generate unit ids in roughly the same order that the group header would for
+-- real frames but we want the fake units to always be after the real units.
+-- Sadly that makes this code pretty downright ugly.
 function GroupHeader:ApplyConfigModeState()
 	if not self.force_show then
 		return
@@ -1072,19 +1046,24 @@ function GroupHeader:ApplyConfigModeState()
 
 
 	if group_filter then
+		local strict_filtering = self:GetAttribute("strictFiltering")
+
 		-- Add in our bogus group and class to the group filter.
 		group_filter = group_filter..',0,!'
 
 		-- filter by a list of group numbers and/or classes
 		fill_table(wipe(token_table), strsplit(",", group_filter))
-		local strict_filtering = self:GetAttribute("strictFiltering")
+
+		if strict_filtering then
+			fill_table(token_table, "MAINTANK", "MAINASSIST", "TANK", "HEALER", "DAMAGER", "NONE")
+		end
 
 		for i = start, finish, 1 do
-			local unit, name, subgroup, class_name, role = get_group_roster_info(super_unit_group, i)
+			local unit, name, subgroup, class_name, role, assigned_role = get_group_roster_info(super_unit_group, i)
 
 			if name and (not strict_filtering
-				and (token_table[subgroup] or token_table[class_name] or (role and token_table[role]))) -- non-strict filtering
-				or (token_table[subgroup] and token_table[class_name]) -- strict filtering
+				and (token_table[subgroup] or token_table[class_name] or (role and token_table[role]) or token_table[assigned_role])) -- non-strict filtering
+				or (token_table[subgroup] and token_table[class_name] and ((role and token_table[role]) or token_table[assigned_role])) -- strict filtering
 				then
 				sorting_table[#sorting_table+1] = unit
 				sorting_table[unit] = name
@@ -1094,6 +1073,8 @@ function GroupHeader:ApplyConfigModeState()
 					grouping_table[unit] = class_name
 				elseif group_by == "ROLE" then
 					grouping_table[unit] = role
+				elseif group_by == "ASSIGNEDROLE" then
+					grouping_table[unit] = assigned_role
 				end
 			end
 		end
@@ -1713,15 +1694,6 @@ local initialConfigFunction = [[
       if clickcast_header then
         clickcast_header:SetAttribute("clickcast_button", self)
         clickcast_header:RunAttribute("clickcast_register")
-        -- Borrowed this idea from ShadowedUF to keep Clique working on
-        -- RAID frames since togglemenu is broken with raid menus.
-        -- this works because we gsub togglemenu -> menu.
-        if "togglemenu" == "menu" then
-          self:SetAttribute("clique-shiv", "1")
-          if self:GetAttribute("type2") == "toggle" .. "menu" then
-            self:SetAttribute("type2", "menu")
-          end
-        end
       end
     else
       self:EnableMouse(false)
@@ -1731,9 +1703,35 @@ local initialConfigFunction = [[
       header:CallMethod("InitialConfigFunction")
     end
 ]]
-if not mop_520 then
-  initialConfigFunction = initialConfigFunction:gsub("togglemenu", "menu")
+
+local function header_OnEvent(self, event, arg1)
+	if not self:IsVisible() or not self.group_db.enabled then return end
+	if event == "UPDATE_BATTLEFIELD_STATUS" and GetBattlefieldStatus(arg1) ~= "active" then return end
+
+	for _, frame in self:IterateMembers() do
+		local update = not not UnitExists(frame.unit) -- want true/false
+		frame:UpdateGUID(UnitGUID(frame.unit), update)
+	end
 end
+
+local function frame_OnEvent(self, event, unit)
+	if not self:GetParent().group_db.enabled then return end
+
+	if UnitExists(self.unit) then
+		self:UpdateGUID(UnitGUID(self.unit), true)
+	end
+end
+
+local function frame_OnUpdate(self, elapsed)
+	self.elapsed = self.elapsed + elapsed
+	if self.elapsed < 0.5 then return end
+	self.elapsed = self.elapsed - 0.5
+
+	if UnitExists(self.unit) then
+		self:UpdateGUID(UnitGUID(self.unit))
+	end
+end
+
 
 --- Add the proper functions and scripts to a SecureGroupHeaderTemplate or SecureGroupPetHeaderTemplate, as well as some initialization.
 -- @param frame a Frame which inherits from SecureGroupHeaderTemplate or SecureGroupPetHeaderTemplate
@@ -1776,100 +1774,9 @@ function PitBull4:ConvertIntoGroupHeader(header)
 			return header:InitialConfigFunction(...)
 		end
 
-		if header.group_db.unit_group:sub(1, 4) == "raid" then
-			header:SetAttribute("initialConfigFunction", initialConfigFunction:gsub("togglemenu", "menu"))
-		else
-			header:SetAttribute("initialConfigFunction", initialConfigFunction)
-		end
-
+		header:SetAttribute("initialConfigFunction", initialConfigFunction)
 	else
-		-- set up our fake header for non party/raid group frames
-
-		-- allow events to force an update
-		header:SetScript("OnEvent", function(self, event, arg1, ...)
-			if not self:IsVisible() or not self.group_db.enabled then return end
-
-			if event == "UPDATE_BATTLEFIELD_STATUS" and GetBattlefieldStatus(arg1) ~= "active" then
-				return
-			elseif event == "UNIT_TARGETABLE_CHANGED" and not arg1:match(self.super_unit_group) then
-				return
-			end
-
-			for _, frame in self:IterateMembers() do
-				frame:UpdateGUID(UnitGUID(frame.unit), true)
-			end
-		end)
-
-		-- set up the unit/unitsuffix and register update events
-		local unit_group = header.group_db.unit_group
-		if unit_group:sub(1, 4) == "boss" then
-			header.super_unit_group = "boss"
-			header.unitsuffix = unit_group:sub(5)
-
-			header:RegisterEvent("INSTANCE_ENCOUNTER_ENGAGE_UNIT")
-			header:RegisterEvent("UNIT_TARGETABLE_CHANGED")
-		elseif unit_group:sub(1, 5) == "arena" then
-			header.super_unit_group = "arena"
-			header.unitsuffix = unit_group:sub(6)
-
-			header:RegisterEvent("UPDATE_BATTLEFIELD_STATUS")
-			if header.unitsuffix ~= "" then
-				header:RegisterEvent("ARENA_OPPONENT_UPDATE")
-			end
-		end
-
-		if header.unitsuffix == "" then
-			header.unitsuffix = nil
-		end
-		local unitsuffix = header.unitsuffix
-
-		local frame_OnEvent = function(self, event, ...)
-			if event == "UNIT_NAME_UPDATE" then
-				self:Update()
-			else
-				self:UpdateGUID(UnitGUID(self.unit), true)
-			end
-		end
-
-		for index = 1, header:GetMaxUnits(true) do
-			local unit = header.super_unit_group .. index -- want the base unit as "unit" before getting wacky in "unitsuffix" (seemed awkward to me)
-
-			-- make a singleton unit frame and tack it onto our header
-			local frame_name = header:GetName() .. "UnitButton" .. index
-			local frame = _G[frame_name]
-			if not frame then
-				frame = CreateFrame("Button", frame_name, header, "SecureUnitButtonTemplate,SecureHandlerBaseTemplate,PitBull4_UnitTemplate_Clique")
-				frame:Hide()
-				frame:EnableMouse(false) -- start disabled so the state change registers the button with Clique
-
-				header[index] = frame
-				header:InitialConfigFunction()
-				frame:SetAttribute("*type1", "target")
-				frame:SetAttribute("*type2", "togglemenu")
-
-				frame:SetAttribute("unit", unit)
-				frame:SetAttribute("unitsuffix", unitsuffix)
-
-				frame:SetScript("OnEvent", frame_OnEvent)
-				frame:RegisterUnitEvent("UNIT_NAME_UPDATE", unit)
-				frame:RegisterUnitEvent("ARENA_OPPONENT_UPDATE", unit)
-				if unitsuffix == "pet" then
-					frame:RegisterUnitEvent("UNIT_PET", unit)
-				end
-
-				frame:WrapScript(frame, "OnAttributeChanged", [[
-          if name == "config_mode" and self:GetAttribute("config_mode") then
-            self:Show()
-          end
-        ]])
-			end
-
-			RegisterUnitWatch(frame)
-
-			frame:RefreshLayout()
-
-			frame:UpdateGUID(UnitGUID(frame.unit))
-		end
+		header:SetScript("OnEvent", header_OnEvent)
 	end
 
 	header:RefreshGroup(true)
@@ -1878,17 +1785,12 @@ function PitBull4:ConvertIntoGroupHeader(header)
 end
 
 
---- Position all the children of a fake group header.
--- duplicate code from SecureGroupHeader_Update IN TWO PLACES!
--- @usage header:PositionMembers()
-function GroupHeader:PositionMembers()
-	if not self[1] then return end -- frames not set up (:SwapGroupTemplate from a disabled header)
-
-	local old_ignore = self:GetAttribute("_ignore")
-	self:SetAttribute("_ignore", "configureChildren")
+--- Creates child frames for an enemy group header and finish configuring them.
+-- @usage header:ConfigureChildren()
+function GroupHeader:ConfigureChildren()
+	if not self.group_db.enabled then return end
 
 	wipe(sorting_table)
-
 	local start, finish, step = 1, self:GetMaxUnits(), 1
 	local super_unit_group = self.super_unit_group
 	for i = start, finish, step do
@@ -1936,7 +1838,26 @@ function GroupHeader:PositionMembers()
 
 		local frame = self[frame_num]
 		if not frame then
-			break
+			-- make a singleton unit frame and tack it onto our header
+			local frame_name = self:GetName() .. "UnitButton" .. frame_num
+			frame = CreateFrame("Button", frame_name, self, "SecureUnitButtonTemplate,SecureHandlerBaseTemplate,PitBull4_UnitTemplate_Clique")
+			frame:Hide()
+			frame:EnableMouse(false) -- start disabled so the state change registers the button with Clique
+
+			self[frame_num] = frame
+			self:InitialConfigFunction()
+			frame:SetAttribute("*type1", "target")
+			frame:SetAttribute("*type2", "togglemenu")
+
+			frame:SetScript("OnEvent", frame_OnEvent)
+
+			frame:WrapScript(frame, "OnAttributeChanged", [[
+        if name == "config_mode" and self:GetAttribute("config_mode") then
+          self:Show()
+        end
+      ]])
+
+			RegisterUnitWatch(frame)
 		end
 		if frame_num == 1 then
 			frame:SetPoint(point, current_anchor, point, 0, 0)
@@ -1955,13 +1876,30 @@ function GroupHeader:PositionMembers()
 		frame:SetAttribute("unit", unit)
 		if old_unit ~= unit then
 			-- update our unit event references
+			frame:SetScript("OnUpdate", nil)
 			frame:UnregisterEvent("UNIT_NAME_UPDATE")
 			frame:UnregisterEvent("ARENA_OPPONENT_UPDATE")
+			frame:UnregisterEvent("UNIT_TARGETABLE_CHANGED")
+			frame:UnregisterEvent("UNIT_TARGET")
 			frame:UnregisterEvent("UNIT_PET")
+
 			frame:RegisterUnitEvent("UNIT_NAME_UPDATE", unit)
 			frame:RegisterUnitEvent("ARENA_OPPONENT_UPDATE", unit)
-			if frame:GetAttribute("unitsuffix") == "pet" then
-				frame:RegisterUnitEvent("UNIT_PET", unit)
+			frame:RegisterUnitEvent("UNIT_TARGETABLE_CHANGED", unit)
+
+			local unitsuffix = frame:GetAttribute("unitsuffix")
+			if unitsuffix then
+				local is_pet = unitsuffix:match("pet")
+				local event_unit = is_pet and unit.."pet" or unit
+
+				if unitsuffix:match("target") then
+					frame:RegisterUnitEvent("UNIT_TARGET", event_unit)
+					frame.elapsed = 0
+					frame:SetScript("OnUpdate", frame_OnUpdate)
+				end
+				if is_pet then
+					frame:RegisterUnitEvent("UNIT_PET", event_unit)
+				end
 			end
 
 			frame:Update()
@@ -1994,8 +1932,6 @@ function GroupHeader:PositionMembers()
 		self:SetWidth( max(min_width, 0.1) )
 		self:SetHeight( max(min_height, 0.1) )
 	end
-
-	self:SetAttribute("_ignore", old_ignore)
 end
-GroupHeader.PositionMembers = PitBull4:OutOfCombatWrapper(GroupHeader.PositionMembers)
+GroupHeader.ConfigureChildren = PitBull4:OutOfCombatWrapper(GroupHeader.ConfigureChildren)
 
