@@ -1,8 +1,6 @@
 -- Update.lua : Code to collect the auras on a unit, create the
 -- aura frames and set the data to display the auras.
 
-if select(6, GetAddOnInfo("PitBull4_" .. (debugstack():match("[o%.][d%.][u%.]les\\(.-)\\") or ""))) ~= "MISSING" then return end
-
 local _G = getfenv(0)
 local PitBull4 = _G.PitBull4
 local PitBull4_Aura = PitBull4:GetModule("Aura")
@@ -269,7 +267,7 @@ end
 
 -- Takes the data for a weapon enchant and builds an aura entry
 local function set_weapon_entry(list, is_enchant, time_left, expiration_time, count, slot)
-	local entry = list[i]
+	local entry = list[slot]
 	if not entry then
 		entry = {}
 		list[slot] = entry
@@ -449,6 +447,7 @@ local function set_aura(frame, db, aura_controls, aura, i, is_friend)
 
 	if not control then
 		control = PitBull4.Controls.MakeAura(frame)
+		control.cooldown.noCooldownCount = db.suppress_occ or nil
 		aura_controls[i] = control
 	end
 
@@ -497,13 +496,8 @@ local function set_aura(frame, db, aura_controls, aura, i, is_friend)
 	count_text:SetText(count > 1 and count or "")
 
 	if db.cooldown[rule] and duration and duration > 0 then
-		local cooldown = control.cooldown
-		-- Avoid updating the cooldown frame if nothing changed to stop the flashing Aura
-		-- problem in 4.0.1.  
-		if not unchanged or not cooldown:IsShown() then
-			cooldown:Show()
-			cooldown:SetCooldown(expiration_time - duration, duration)
-		end
+		control.cooldown:SetCooldown(expiration_time - duration, duration)
+		control.cooldown:Show()
 	else
 		control.cooldown:Hide()
 	end
@@ -714,6 +708,7 @@ local function clear_auras(frame, is_buff)
 	end
 
 	for i = 1, #controls do
+		controls[i].cooldown.noCooldownCount = nil
 		controls[i] = controls[i]:Delete()
 	end
 end
@@ -916,7 +911,7 @@ function PitBull4_Aura:UNIT_AURA(event, unit)
 	-- once every 0.2 seconds.  We capture the GUID at the event
 	-- time because the unit ids can change between when we receive
 	-- the event and do the throttled update
-	local guid = UnitGUID(unit)
+	local guid = unit and UnitGUID(unit)
 	if guid then
 		guids_to_update[guid] = true
 	end

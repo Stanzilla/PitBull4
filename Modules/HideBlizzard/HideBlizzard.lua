@@ -1,5 +1,3 @@
-if select(6, GetAddOnInfo("PitBull4_" .. (debugstack():match("[o%.][d%.][u%.]les\\(.-)\\") or ""))) ~= "MISSING" then return end
-
 local PitBull4 = _G.PitBull4
 if not PitBull4 then
 	error("PitBull4_HideBlizzard requires PitBull4")
@@ -137,11 +135,7 @@ end
 function showers:raid()
 	CompactRaidFrameManager:RegisterEvent("GROUP_ROSTER_UPDATE")	
 	CompactRaidFrameManager:RegisterEvent("PLAYER_ENTERING_WORLD")
-	if GetDisplayedAllyFrames then
-		if GetDisplayedAllyFrames() == "raid" then
-			CompactRaidFrameManager:Show()
-		end
-	elseif GetNumRaidMembers() > 0 then
+	if GetDisplayedAllyFrames() == "raid" then
 		CompactRaidFrameManager:Show()
 	end
 	if compact_raid and compact_raid ~= "0" then
