@@ -186,6 +186,7 @@ friend_buffs.DRUID = {
 	[24907]  = true, -- Moonkin Aura
 	[8936]   = true, -- Regrowth
 	[774]    = true, -- Rejuvenation
+	[155777] = true, -- Rejuvenation (Germination)
 	[77761]  = true, -- Stampeding Roar
 	[740]    = true, -- Tranquility
 	[5420]   = true, -- Tree of Life TODO:Check this
