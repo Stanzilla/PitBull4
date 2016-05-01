@@ -26,6 +26,7 @@ function delete_funcs:FontString()
 	self:SetTextColor(1, 1, 1, 1)
 	self:SetFont(default_font, default_font_size, nil)
 	self:SetFontObject(nil)
+	self:SetWordWrap(false)
 end
 function delete_funcs:Texture()
 	self:SetTexture([[Interface\Buttons\WHITE8X8]])
