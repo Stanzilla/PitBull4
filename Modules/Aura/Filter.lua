@@ -25,16 +25,6 @@ local function scan_for_known_talent(spellid)
 	return IsPlayerSpell(spellid)
 end
 
-local function scan_for_known_glyph(spellid)
-	for index = 1, NUM_GLYPH_SLOTS do
-		local _, _, _, gylph_spellid = GetGlyphSocketInfo(index)
-		if gylph_spellid == spellid then
-			return true
-		end
-	end
-	return false
-end
-
 -- Setup the data for who can dispel what types of auras.
 -- dispel in this context means remove from friendly players
 local can_dispel = {
@@ -75,10 +65,7 @@ PitBull4_Aura.can_dispel = can_dispel
 
 -- Setup the data for who can purge what types of auras.
 -- purge in this context means remove from enemies.
-local can_purge = {
-	DEATHKNIGHT = {
-		Magic = scan_for_known_glyph(58631),
-	},
+local can_purge = {	
 	DRUID = {
 		Enrage = true,
 	},
@@ -101,10 +88,7 @@ local can_purge = {
 	},
 	WARLOCK = {
 		Magic = true,
-	},
-	WARRIOR = {
-		Magic = scan_for_known_glyph(58375),
-	},
+	},	
 	MONK = {},
 }
 can_purge.player = can_purge[player_class]
@@ -128,15 +112,7 @@ function PitBull4_Aura:PLAYER_TALENT_UPDATE(event)
 
 	local paladin_magic = scan_for_known_talent(53551)
 	can_dispel.PALADIN.Magic = paladin_magic
-	self:GetFilterDB('/3').aura_type_list.Magic = paladin_magic
-
-	local deathknight_magic = scan_for_known_glyph(58631)
-	can_purge.DEATHKNIGHT.Magic = deathknight_magic
-	self:GetFilterDB('+7').aura_type_list.Magic = deathknight_magic
-
-	local warrior_magic = scan_for_known_glyph(58375)
-	can_purge.WARRIOR.Magic = warrior_magic
-	self:GetFilterDB('47').aura_type_list.Magic = warrior_magic
+	self:GetFilterDB('/3').aura_type_list.Magic = paladin_magic	
 end
 
 -- Setup the data for which auras belong to whom
