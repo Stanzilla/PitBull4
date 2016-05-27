@@ -97,7 +97,7 @@ function PitBull4_HealthBar:GetColor(frame, value)
 	elseif UnitIsDeadOrGhost(unit) then
 		local color = self.db.profile.global.colors.dead
 		return color[1], color[2], color[3], nil, true
-	elseif UnitIsTapped(unit) and not UnitIsTappedByPlayer(unit) and not UnitIsTappedByAllThreatList(unit) then
+	elseif UnitIsTapDenied(unit) then
 		local color = self.db.profile.global.colors.tapped
 		return color[1], color[2], color[3], nil, true
 	end

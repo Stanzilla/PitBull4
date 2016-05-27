@@ -372,7 +372,7 @@ local function HostileColor(unit)
 				-- either enemy or friend, no violance
 				r, g, b = unpack(PitBull4.ReactionColors.civilian)
 			end
-		elseif (UnitIsTapped(unit) and not UnitIsTappedByPlayer(unit) and not UnitIsTappedByAllThreatList(unit)) or UnitIsDead(unit) then
+		elseif UnitIsTapDenied(unit) or UnitIsDead(unit) then
 			r, g, b = 0.5, 0.5, 0.5 -- TODO: We really need this to be globally configurable. 
 		else
 			local reaction = UnitReaction(unit, "player")
