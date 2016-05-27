@@ -66,7 +66,7 @@ function PitBull4_Background:UpdateFrame(frame)
 	end
 	
 	background:Show()
-	background:SetTexture(self:GetColor(frame))
+	background:SetColorTexture(self:GetColor(frame))
 
 	-- 3D Portrait
 	local layout_db = self:GetLayoutDB(frame)
