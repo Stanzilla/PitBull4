@@ -227,7 +227,7 @@ function PitBull4_Portrait:UpdateFrame(frame)
 		local bg = PitBull4.Controls.MakeTexture(frame, "BACKGROUND")
 		portrait.bg = bg
 		bg:SetAllPoints(portrait)
-		bg:SetTexture(unpack(layout_db.color))
+		bg:SetColorTexture(unpack(layout_db.color))
 	end
 	
 	if portrait.guid == frame.guid and guid_demanding_update ~= frame.guid then

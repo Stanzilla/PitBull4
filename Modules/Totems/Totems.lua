@@ -818,7 +818,7 @@ function PitBull4_Totems:BuildFrames(frame)
 		ttf.background = PitBull4.Controls.MakeTexture(ttf, "BACKGROUND")
 	end
 	local bg = ttf.background
-	bg:SetTexture(color_option_get('main_background'))
+	bg:SetColorTexture(color_option_get('main_background'))
 	bg:SetAllPoints(ttf)
 	
 	-- Now create the main timer frames for each totem element
@@ -953,7 +953,7 @@ function PitBull4_Totems:ApplyLayoutSettings(frame)
 	self:ResizeMainFrame(frame)
 	
 	-- Background color of the main frame
-	frame.Totems.background:SetTexture(color_option_get('main_background'))
+	frame.Totems.background:SetColorTexture(color_option_get('main_background'))
 	
 	-- Bordercolor of the buttons
 	self:UpdateIconColor(frame)

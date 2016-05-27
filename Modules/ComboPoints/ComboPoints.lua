@@ -134,7 +134,7 @@ function PitBull4_ComboPoints:UpdateFrame(frame)
 		if db.has_background_color then
 			local bg = PitBull4.Controls.MakeTexture(combos, "BACKGROUND")
 			combos.bg = bg
-			bg:SetTexture(unpack(db.background_color))
+			bg:SetColorTexture(unpack(db.background_color))
 			bg:SetAllPoints(combos)
 
 			local height
