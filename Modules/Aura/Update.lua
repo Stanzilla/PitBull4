@@ -499,7 +499,7 @@ local function set_aura(frame, db, aura_controls, aura, i, is_friend)
 		-- problem since 4.0.1.
 		if not unchanged or not cooldown:IsShown() then
 			cooldown:Show()
-			CooldownFrame_SetTimer(cooldown, expiration_time - duration, duration, 1)
+			CooldownFrame_Set(cooldown, expiration_time - duration, duration, 1)
 		end
 	else
 		control.cooldown:SetCooldown(0, 0)
