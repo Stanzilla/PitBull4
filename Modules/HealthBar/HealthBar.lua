@@ -42,8 +42,8 @@ local predicted_health = true
 function PitBull4_HealthBar:OnEnable()
 	timerFrame:Show()
 	
-	self:RegisterEvent("UNIT_HEALTH")
-	self:RegisterEvent("UNIT_MAXHEALTH","UNIT_HEALTH")
+	self:RegisterEvent("UNIT_HEALTH_FREQUENT")
+	self:RegisterEvent("UNIT_MAXHEALTH","UNIT_HEALTH_FREQUENT")
 	self:RegisterEvent("PLAYER_ALIVE")
 	
 	self:SecureHook("SetCVar")
@@ -127,7 +127,7 @@ function PitBull4_HealthBar:GetExampleColor(frame, value)
 	return unpack(self.db.profile.global.colors.disconnected)
 end
 
-function PitBull4_HealthBar:UNIT_HEALTH(event, unit)
+function PitBull4_HealthBar:UNIT_HEALTH_FREQUENT(event, unit)
 	local guid = UnitGUID(unit)
 	if guid then
 		guids_to_update[guid] = true
