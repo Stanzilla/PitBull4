@@ -1,23 +1,19 @@
 if select(5, GetAddOnInfo("PitBull4_" .. (debugstack():match("[o%.][d%.][u%.]les\\(.-)\\") or ""))) ~= "MISSING" then return end
 
-local player_class = select(2, UnitClass("player"))
-if player_class ~= "DRUID" and player_class ~= "MONK" then
-	return
-end
-
 local PitBull4 = _G.PitBull4
 if not PitBull4 then
-	error("PitBull4_DruidManaBar requires PitBull4")
+	error("PitBull4_ExtraManaBar requires PitBull4")
 end
 
 local L = PitBull4.L
 
-local PitBull4_DruidManaBar = PitBull4:NewModule("DruidManaBar", "AceEvent-3.0")
+local PitBull4_ExtraManaBar = PitBull4:NewModule("ExtraManaBar", "AceEvent-3.0")
+local player_class = select(2, UnitClass("player"))
 
-PitBull4_DruidManaBar:SetModuleType("bar")
-PitBull4_DruidManaBar:SetName(L["Druid/Monk mana bar"])
-PitBull4_DruidManaBar:SetDescription(L["Show the mana bar when a druid is in cat or bear form or a mistweaver monk is in stance of the fierce tiger."])
-PitBull4_DruidManaBar:SetDefaults({
+PitBull4_ExtraManaBar:SetModuleType("bar")
+PitBull4_ExtraManaBar:SetName(L["Extra mana bar"])
+PitBull4_ExtraManaBar:SetDescription(L["Show a mana bar for classes that have a different main resource but still use mana for some spells."])
+PitBull4_ExtraManaBar:SetDefaults({
 	size = 1,
 	position = 6,
 	hide_if_full = false,
@@ -29,16 +25,14 @@ local MANA_TYPE = 0
 -- cached power type for optimization
 local power_type = nil
 
-function PitBull4_DruidManaBar:OnEnable()
-	PitBull4_DruidManaBar:RegisterEvent("UNIT_POWER_FREQUENT")
-	PitBull4_DruidManaBar:RegisterEvent("UNIT_MAXPOWER","UNIT_POWER_FREQUENT")
-	PitBull4_DruidManaBar:RegisterEvent("UNIT_DISPLAYPOWER","UNIT_POWER_FREQUENT")
-	if player_class == "MONK" then
-		PitBull4_DruidManaBar:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
-	end
+function PitBull4_ExtraManaBar:OnEnable()
+	PitBull4_ExtraManaBar:RegisterEvent("UNIT_POWER_FREQUENT")
+	PitBull4_ExtraManaBar:RegisterEvent("UNIT_MAXPOWER","UNIT_POWER_FREQUENT")
+	PitBull4_ExtraManaBar:RegisterEvent("UNIT_DISPLAYPOWER","UNIT_POWER_FREQUENT")
+	PitBull4_ExtraManaBar:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
 end
 
-function PitBull4_DruidManaBar:GetValue(frame)
+function PitBull4_ExtraManaBar:GetValue(frame)
 	if frame.unit ~= "player" then
 		return nil
 	end
@@ -48,9 +42,12 @@ function PitBull4_DruidManaBar:GetValue(frame)
 		return nil
 	end
 
-	if player_class == "MONK" and GetSpecialization() ~= SPEC_MONK_MISTWEAVER then
+	if (player_class == "MONK" and GetSpecialization() ~= SPEC_MONK_MISTWEAVER) or
+		(player_class == "PRIEST" and GetSpecialization() ~= SPEC_PRIEST_SHADOW) or
+		(player_class == "DRUID" and GetSpecialization() ~= SPEC_DRUID_BALANCE) or
+		(player_class == "SHAMAN" and GetSpecialization() == SPEC_SHAMAN_RESTORATION) then
 		return nil
-	end
+	end	
 
 	local max = UnitPowerMax("player", MANA_TYPE)
 	local percent = 0
@@ -64,18 +61,18 @@ function PitBull4_DruidManaBar:GetValue(frame)
 
 	return percent
 end
-function PitBull4_DruidManaBar:GetExampleValue(frame)
+function PitBull4_ExtraManaBar:GetExampleValue(frame)
 	-- just go with what :GetValue gave
 	return nil
 end
 
-function PitBull4_DruidManaBar:GetColor(frame, value)
+function PitBull4_ExtraManaBar:GetColor(frame, value)
 	local color = PitBull4.PowerColors["MANA"]
 	return color[1], color[2], color[3]
 end
-PitBull4_DruidManaBar.GetExampleColor = PitBull4_DruidManaBar.GetColor
+PitBull4_ExtraManaBar.GetExampleColor = PitBull4_ExtraManaBar.GetColor
 
-function PitBull4_DruidManaBar:UNIT_POWER_FREQUENT(event, unit, power_type)
+function PitBull4_ExtraManaBar:UNIT_POWER_FREQUENT(event, unit, power_type)
 	if unit ~= "player" or ((event == "UNIT_POWER_FREQUENT" or event == "UNIT_MAXPOWER") and power_type ~= "MANA") then
 		return
 	end
@@ -94,13 +91,13 @@ function PitBull4_DruidManaBar:UNIT_POWER_FREQUENT(event, unit, power_type)
 	end
 end
 
-function PitBull4_DruidManaBar:PLAYER_SPECIALIZATION_CHANGED(event)
+function PitBull4_ExtraManaBar:PLAYER_SPECIALIZATION_CHANGED(event)
 	for frame in PitBull4:IterateFramesForUnitID("player") do
 		self:Update(frame)
 	end
 end
 
-PitBull4_DruidManaBar:SetLayoutOptionsFunction(function(self)
+PitBull4_ExtraManaBar:SetLayoutOptionsFunction(function(self)
 	return 'hide_if_full', {
 		name = L["Hide if full"],
 		desc = L["Hide when at 100% mana."],

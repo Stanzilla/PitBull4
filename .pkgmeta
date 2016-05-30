@@ -54,7 +54,6 @@ move-folders:
     PitBull4/Modules/BattlePet: PitBull4_BattlePet
     PitBull4/Modules/BlankSpace: PitBull4_BlankSpace
     PitBull4/Modules/Border: PitBull4_Border
-    PitBull4/Modules/BurningEmbers: PitBull4_BurningEmbers
     PitBull4/Modules/CastBar: PitBull4_CastBar
     PitBull4/Modules/CastBarLatency: PitBull4_CastBarLatency
     PitBull4/Modules/Chi: PitBull4_Chi
@@ -62,11 +61,9 @@ move-folders:
     PitBull4/Modules/CombatIcon: PitBull4_CombatIcon
     PitBull4/Modules/CombatText: PitBull4_CombatText
     PitBull4/Modules/ComboPoints: PitBull4_ComboPoints
-    PitBull4/Modules/DemonicFury: PitBull4_DemonicFury
     PitBull4/Modules/DogTagTexts: PitBull4_DogTagTexts
-    PitBull4/Modules/DruidManaBar: PitBull4_DruidManaBar
-    PitBull4/Modules/Eclipse: PitBull4_Eclipse
     PitBull4/Modules/ExperienceBar: PitBull4_ExperienceBar
+    PitBull4/Modules/ExtraManaBar: PitBull4_ExtraManaBar
     PitBull4/Modules/HealthBar: PitBull4_HealthBar
     PitBull4/Modules/HideBlizzard: PitBull4_HideBlizzard
     PitBull4/Modules/Highlight: PitBull4_Highlight
@@ -87,7 +84,6 @@ move-folders:
     PitBull4/Modules/RestIcon: PitBull4_RestIcon
     PitBull4/Modules/RoleIcon: PitBull4_RoleIcon
     PitBull4/Modules/Runes: PitBull4_Runes
-    PitBull4/Modules/ShadowOrbs: PitBull4_ShadowOrbs
     PitBull4/Modules/SoulShards: PitBull4_SoulShards
     PitBull4/Modules/Sounds: PitBull4_Sounds
     PitBull4/Modules/ThreatBar: PitBull4_ThreatBar

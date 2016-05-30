@@ -9,7 +9,6 @@
 <Include file="Modules\BattlePet\load.xml"/>
 <Include file="Modules\BlankSpace\load.xml"/>
 <Include file="Modules\Border\load.xml"/>
-<Include file="Modules\BurningEmbers\load.xml"/>
 <Include file="Modules\CastBar\load.xml"/>
 <Include file="Modules\CastBarLatency\load.xml"/>
 <Include file="Modules\Chi\load.xml"/>
@@ -17,11 +16,9 @@
 <Include file="Modules\CombatIcon\load.xml"/>
 <Include file="Modules\CombatText\load.xml"/>
 <Include file="Modules\ComboPoints\load.xml"/>
-<Include file="Modules\DemonicFury\load.xml"/>
 <Include file="Modules\DogTagTexts\load.xml"/>
-<Include file="Modules\DruidManaBar\load.xml"/>
-<Include file="Modules\Eclipse\load.xml"/>
 <Include file="Modules\ExperienceBar\load.xml"/>
+<Include file="Modules\ExtraManaBar\load.xml"/>
 <Include file="Modules\HealthBar\load.xml"/>
 <Include file="Modules\HideBlizzard\load.xml"/>
 <Include file="Modules\Highlight\load.xml"/>
@@ -42,7 +39,6 @@
 <Include file="Modules\RestIcon\load.xml"/>
 <Include file="Modules\RoleIcon\load.xml"/>
 <Include file="Modules\Runes\load.xml"/>
-<Include file="Modules\ShadowOrbs\load.xml"/>
 <Include file="Modules\SoulShards\load.xml"/>
 <Include file="Modules\Sounds\load.xml"/>
 <Include file="Modules\ThreatBar\load.xml"/>
