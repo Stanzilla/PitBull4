@@ -84,6 +84,7 @@ function delete_funcs:Animation()
 	self:Stop()
 end
 function delete_funcs:Alpha()
+	self:SetFromAlpha(0)
 	self:SetToAlpha(0)
 	delete_funcs.Animation(self)
 end
