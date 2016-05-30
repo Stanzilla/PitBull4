@@ -7,7 +7,7 @@ end
 
 local L = PitBull4.L
 
-local PitBull4_AltManaBar = PitBull4:NewModule("AltManaBar", "AceEvent-3.0")
+local PitBull4_AltManaBar = PitBull4:NewModule("DruidManaBar", "AceEvent-3.0")
 local player_class = select(2, UnitClass("player"))
 
 PitBull4_AltManaBar:SetModuleType("bar")
