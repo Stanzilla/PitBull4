@@ -244,27 +244,31 @@ function BetterStatusBar:SetValue(value)
 			if self.fade then
 				local bg_alpha = self:GetBackgroundAlpha()
 				local alpha_delta = 0.7 * (normal_alpha - bg_alpha)
+				local current_alpha
 				if alpha_delta == 0 then
+					current_alpha = 0
 					alpha_delta = 0.7 * normal_alpha
+				else
+					current_alpha = bg_alpha
 				end
-				anim.fader:SetFromAlpha(bg_alpha)
-				anim.fader:SetToAlpha(normal_alpha * alpha_delta)
+				anim:SetAlpha(current_alpha)
+				anim.fader:SetFromAlpha(current_alpha)
+				anim.fader:SetToAlpha(current_alpha + alpha_delta)
 			else
 				anim:SetAlpha(normal_alpha)
 			end
 			run_animation = true
 		elseif value_delta < 0 then
 			local normal_alpha = self:GetNormalAlpha()
+			anim:SetAlpha(normal_alpha)
 			if self.fade then
 				local bg_alpha = self:GetBackgroundAlpha()
 				local alpha_delta = 0.7 * (bg_alpha - normal_alpha)
 				if alpha_delta == 0 then
-					alpha_delta = 0.3 * bg_alpha
+					alpha_delta = -0.7 * bg_alpha
 				end
 				anim.fader:SetFromAlpha(normal_alpha)
-				anim.fader:SetToAlpha(bg_alpha * alpha_delta)
-			else
-				anim:SetAlpha(normal_alpha)
+				anim.fader:SetToAlpha(normal_alpha + alpha_delta)
 			end
 			run_animation = true
 		end
