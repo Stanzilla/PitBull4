@@ -71,7 +71,7 @@ function PitBull4_ReputationBar:GetExampleColor(frame)
 	return color[1], color[2], color[3]
 end
 
-hooksecurefunc("ReputationWatchBar_Update", function()
+hooksecurefunc("MainMenuBar_UpdateExperienceBars", function()
 	if not PitBull4_ReputationBar:IsEnabled() then
 		return
 	end
