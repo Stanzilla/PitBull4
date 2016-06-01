@@ -1,6 +1,6 @@
 if select(5, GetAddOnInfo("PitBull4_" .. (debugstack():match("[o%.][d%.][u%.]les\\(.-)\\") or ""))) ~= "MISSING" then return end
 
-local player_class = select(2,UnitClass('player'))
+local player_class = select(2, UnitClass("player"))
 if player_class ~= "SHAMAN" and player_class ~= "DRUID" and player_class ~= "MONK" and player_class ~= "MAGE" then
 	return
 end
@@ -111,8 +111,6 @@ local type = _G.type
 local GetTotemTimeLeft = _G.GetTotemTimeLeft
 local GetTotemInfo = _G.GetTotemInfo
 -----------------------------------------------------------------------------
-
-
 
 local PitBull4_Totems = PitBull4:NewModule("Totems", "AceEvent-3.0", "AceTimer-3.0")
 local self = PitBull4_Totems
@@ -954,7 +952,7 @@ function PitBull4_Totems:ApplyLayoutSettings(frame)
 	
 	-- Background color of the main frame
 	frame.Totems.background:SetColorTexture(color_option_get('main_background'))
-	
+
 	-- Bordercolor of the buttons
 	self:UpdateIconColor(frame)
 
