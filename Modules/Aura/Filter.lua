@@ -2,15 +2,14 @@
 
 if select(5, GetAddOnInfo("PitBull4_" .. (debugstack():match("[o%.][d%.][u%.]les\\(.-)\\") or ""))) ~= "MISSING" then return end
 
-local _G = getfenv(0)
 local PitBull4 = _G.PitBull4
 local L = PitBull4.L
 local PitBull4_Aura = PitBull4:GetModule("Aura")
 
-local GetNumSpecializations = GetNumSpecializations
+local legion_700 = select(4, GetBuildInfo()) >= 70000
 
-local _,player_class = UnitClass('player')
-local player_faction = UnitFactionGroup('player')
+local _, player_class = UnitClass("player")
+local player_faction = UnitFactionGroup("player")
 
 --- Return the DB dictionary for the specified filter.
 -- Filter Types should use this to get their db.
@@ -395,7 +394,7 @@ enemy_debuffs.MAGE = {
 	[44614]  = true, -- Frostfire Bolt
 	[84714]  = true, -- Frozen Orb
 	[7302]   = true, -- Ice Armor
-	[157997]  = true, -- Ice Nova
+	[157997] = true, -- Ice Nova
 	[3261]   = true, -- Ignite
 	[114923] = true, -- Nether Tempest
 	[44457]  = true, -- Living Bomb
