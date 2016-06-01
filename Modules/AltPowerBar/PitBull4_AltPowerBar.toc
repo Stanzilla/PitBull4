@@ -20,6 +20,5 @@
 ## LoadOnDemand: 1
 ## Dependencies: PitBull4
 ## Version: @project-version@
-## X-PitBull4-Condition: return not not ALTERNATE_POWER_INDEX
 
 load.xml
