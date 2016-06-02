@@ -88,30 +88,31 @@ function PitBull4_Portrait:ClearFrame(frame)
 	if not frame.Portrait then
 		return false
 	end
-	
+
 	local portrait = frame.Portrait
-	
+
 	if portrait.model then
+		portrait.model:SetScript("OnModelLoaded", nil)
 		portrait.model:SetScript("OnUpdate", nil)
 		portrait.model = portrait.model:Delete()
 	end
 	if portrait.texture then
 		portrait.texture = portrait.texture:Delete()
 	end
-	
+
 	portrait.bg = portrait.bg:Delete()
-	
+
 	portrait.style = nil
 	portrait.height = nil
 	portrait.guid = nil
 	portrait.falling_back = nil
 	frame.Portrait = portrait:Delete()
-	
+
 	return true
 end
 
 local function model_OnUpdate(self, elapsed)
-	
+
 	local frame = self:GetParent()
 	local style = frame.Portrait.style
 	local full_body = PitBull4_Portrait:GetLayoutDB(frame).full_body
@@ -141,15 +142,16 @@ local function model_OnUpdate(self, elapsed)
 
 	-- work around a Blizzard bug that causes model frames not to
 	-- adjust their alpha realtive to their parent frames alpha after
-	-- the model is updated.  So we nudge the alpha down a bit and 
+	-- the model is updated.  So we nudge the alpha down a bit and
 	-- then back up to get it to update.
 	self:SetAlpha(0.9999999)
 	self:SetAlpha(1)
-	
-	if type(self:GetModel()) == "string" then
-		-- the portrait was set properly, we can stop trying to set the portrait 
-		self:SetScript("OnUpdate", nil)
-	end
+end
+
+local function model_OnModelLoaded(self)
+	-- the portrait was set, we can stop trying to set it
+	self:SetScript("OnModelLoaded", nil)
+	self:SetScript("OnUpdate", nil)
 end
 
 function PitBull4_Portrait:OnHide(frame)
@@ -168,9 +170,9 @@ function PitBull4_Portrait:UpdateFrame(frame)
 	local style = layout_db.style
 	local pirate = pirate_day and self.db.profile.global.pirate and not InCombatLockdown()
 	local falling_back = false
-	
+
 	local unit = frame.unit
-	
+
 	if pirate and unit and UnitIsPlayer(unit) then
 		style = "pirate"
 	end
@@ -186,18 +188,18 @@ function PitBull4_Portrait:UpdateFrame(frame)
 			falling_back = true
 		end
 	end
-	
+
 	if style == "hide" then
 		return self:ClearFrame(frame)
 	end
-	
+
 	local portrait = frame.Portrait
-	
+
 	if portrait and portrait.style ~= style then
 		self:ClearFrame(frame)
 		portrait = nil
 	end
-	
+
 	local created = not portrait
 	if created then
 		portrait = PitBull4.Controls.MakeFrame(frame)
@@ -207,7 +209,7 @@ function PitBull4_Portrait:UpdateFrame(frame)
 		portrait:SetHeight(60)
 		portrait.height = 4
 		portrait.style = style
-	
+
 		if style == "three_dimensional" then
 			local model = PitBull4.Controls.MakePlayerModel(frame)
 			model:SetFrameLevel(frame:GetFrameLevel() + 5)
@@ -223,13 +225,13 @@ function PitBull4_Portrait:UpdateFrame(frame)
 			portrait.texture = texture
 			texture:SetAllPoints(portrait)
 		end
-		
+
 		local bg = PitBull4.Controls.MakeTexture(frame, "BACKGROUND")
 		portrait.bg = bg
 		bg:SetAllPoints(portrait)
 		bg:SetColorTexture(unpack(layout_db.color))
 	end
-	
+
 	if portrait.guid == frame.guid and guid_demanding_update ~= frame.guid then
 		if portrait.bg then
 			portrait.bg:Show()
@@ -237,13 +239,14 @@ function PitBull4_Portrait:UpdateFrame(frame)
 		portrait:Show()
 		return false
 	end
-	
+
 	portrait.falling_back = falling_back
 	portrait.guid = frame.guid
 	if style == "three_dimensional" or style == "pirate" then
 		-- For 3d portraits we have to set the parameters later, doing
 		-- it immediately after a model frame is created doesn't work
 		-- reliably.
+		portrait.model:SetScript("OnModelLoaded", model_OnModelLoaded)
 		portrait.model:SetScript("OnUpdate", model_OnUpdate)
 	elseif style == "two_dimensional" then
 		portrait.texture:SetTexCoord(0.14644660941, 0.85355339059, 0.14644660941, 0.85355339059)
@@ -255,7 +258,7 @@ function PitBull4_Portrait:UpdateFrame(frame)
 		end
 	elseif style == "blank" then
 		portrait.texture:SetTexture("")
-	else -- class	
+	else -- class
 		local class, _
 		if unit then
 			_, class = UnitClass(unit)
@@ -270,7 +273,7 @@ function PitBull4_Portrait:UpdateFrame(frame)
 			portrait.texture:SetTexCoord(0.07, 0.93, 0.07, 0.93)
 		end
 	end
-	
+
 	if portrait.bg then
 		portrait.bg:Show()
 	end
@@ -310,7 +313,7 @@ PitBull4_Portrait:SetLayoutOptionsFunction(function(self)
 		end,
 		set = function(info, value)
 			PitBull4.Options.GetLayoutDB(self).full_body = value
-			
+
 			for frame in PitBull4:IterateFrames() do
 				self:Clear(frame)
 			end
@@ -325,7 +328,7 @@ PitBull4_Portrait:SetLayoutOptionsFunction(function(self)
 		end,
 		set = function(info, value)
 			PitBull4.Options.GetLayoutDB(self).style = value
-			
+
 			for frame in PitBull4:IterateFrames() do
 				self:Clear(frame)
 			end
@@ -373,7 +376,7 @@ PitBull4_Portrait:SetLayoutOptionsFunction(function(self)
 			for frame in PitBull4:IterateFrames() do
 				self:Clear(frame)
 			end
-			self:UpdateAll() 
+			self:UpdateAll()
 		end,
 	}
 end)
