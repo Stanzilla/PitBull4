@@ -15,6 +15,8 @@ local BASE_TEXTURE_PATH = [[Interface\AddOns\]] .. debugstack():match("[d%.][d%.
 
 local L = PitBull4.L
 
+local SPELL_POWER_COMBO_POINTS = _G.SPELL_POWER_COMBO_POINTS
+
 local TEXTURES = {
 	default = L["Default"],
 }
@@ -44,14 +46,24 @@ PitBull4_ComboPoints:SetDefaults({
 })
 
 function PitBull4_ComboPoints:OnEnable()
-	self:RegisterEvent("UNIT_COMBO_POINTS")
+	self:RegisterEvent("UNIT_POWER_FREQUENT")
+	self:RegisterEvent("UNIT_EXITED_VEHICLE")
 	if is_druid then
 		self:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
 	end
 end
 
-function PitBull4_ComboPoints:UNIT_COMBO_POINTS(event, unit)
+function PitBull4_ComboPoints:UNIT_POWER_FREQUENT(event, unit, power_type)
 	if unit ~= "player" and unit ~= "pet" then return end
+	if power_type ~= "COMBO_POINTS" then return end
+
+	for frame in PitBull4:IterateFramesForUnitIDs("player", "pet", "target") do
+		self:Update(frame)
+	end
+end
+
+function PitBull4_ComboPoints:UNIT_EXITED_VEHICLE(event, unit)
+	if unit ~= "player" then return end
 
 	for frame in PitBull4:IterateFramesForUnitIDs("player", "pet", "target") do
 		self:Update(frame)
@@ -92,7 +104,7 @@ function PitBull4_ComboPoints:UpdateFrame(frame)
 		return self:ClearFrame(frame)
 	end
 
-	local num_combos = has_vehicle and GetComboPoints("vehicle", "target") or UnitPower("player", 4)
+	local num_combos = has_vehicle and GetComboPoints("vehicle", "target") or UnitPower("player", SPELL_POWER_COMBO_POINTS)
 
 	-- While non-rogues and non-druids typically don't have combo points, certain game
 	-- mechanics may add them anyway (e.g. Malygos vehicles). Always show the combo
