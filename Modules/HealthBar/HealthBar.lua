@@ -10,7 +10,7 @@ local EXAMPLE_VALUE = 0.8
 local unpack = _G.unpack
 local L = PitBull4.L
 
-local PitBull4_HealthBar = PitBull4:NewModule("HealthBar", "AceEvent-3.0", "AceHook-3.0")
+local PitBull4_HealthBar = PitBull4:NewModule("HealthBar", "AceEvent-3.0")
 
 PitBull4_HealthBar:SetModuleType("bar")
 PitBull4_HealthBar:SetName(L["Health bar"])
@@ -21,7 +21,6 @@ PitBull4_HealthBar:SetDefaults({
 	color_by_class = true,
 	hostility_color = true,
 	hostility_color_npcs = true,
-	fast_updates = true,
 }, {
 	colors = {
 		dead = { 0.6, 0.6, 0.6 },
@@ -37,17 +36,13 @@ local timerFrame = CreateFrame("Frame")
 timerFrame:Hide()
 
 local guids_to_update = {}
-local predicted_health = true
 
 function PitBull4_HealthBar:OnEnable()
 	timerFrame:Show()
 	
 	self:RegisterEvent("UNIT_HEALTH_FREQUENT")
 	self:RegisterEvent("UNIT_MAXHEALTH","UNIT_HEALTH_FREQUENT")
-	self:RegisterEvent("PLAYER_ALIVE")
-	
-	self:SecureHook("SetCVar")
-	self:SetCVar()
+	self:RegisterEvent("PLAYER_ALIVE")	
 
 	self:UpdateAll()
 end
@@ -61,17 +56,7 @@ timerFrame:SetScript("OnUpdate", function()
 		for frame in PitBull4:IterateFramesForGUID(guid) do
 			PitBull4_HealthBar:Update(frame)
 		end
-	end
-	if predicted_health then
-		for frame in PitBull4:IterateFrames() do
-			if frame.guid and not guids_to_update[frame.guid] then
-				local db = PitBull4_HealthBar:GetLayoutDB(frame)
-				if db.fast_updates then
-					PitBull4_HealthBar:Update(frame)
-				end
-			end
-		end
-	end
+	end	
 	wipe(guids_to_update)
 end)
 
@@ -137,26 +122,6 @@ end
 function PitBull4_HealthBar:PLAYER_ALIVE(event)
 	guids_to_update[UnitGUID("player")] = true
 end
-
-function PitBull4_HealthBar:SetCVar()
-	predicted_health = GetCVarBool("predictedHealth")
-end
-
-PitBull4_HealthBar:SetLayoutOptionsFunction(function(self)
-	return 'fast_updates', {
-		name = L['Fast updates'],
-		desc = L['Update the health bar using the games predicted health method.'],
-		type = 'toggle',
-		get = function(info)
-			return PitBull4.Options.GetLayoutDB(self).fast_updates
-		end,
-		set = function(info,value)
-			PitBull4.Options.GetLayoutDB(self).fast_updates = value
-
-			PitBull4.Options.UpdateFrames()
-		end
-	}
-end)
 
 PitBull4_HealthBar:SetColorOptionsFunction(function(self)
 	local function get(info)
