@@ -197,15 +197,11 @@ end
 function hiders:aura()
 	BuffFrame:Hide()
 	TemporaryEnchantFrame:Hide()
-	ConsolidatedBuffs:Hide()
 	BuffFrame:UnregisterAllEvents()
 end
 
 function showers:aura()
-	BuffFrame:Show()
-	if GetCVarBool("consolidateBuffs") then
-		ConsolidatedBuffs:Show()
-	end
+	BuffFrame:Show()	
 	TemporaryEnchantFrame:Show()
 
 	-- Can't use OnLoad because doing so resets some variables which
