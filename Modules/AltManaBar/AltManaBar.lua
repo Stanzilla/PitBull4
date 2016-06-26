@@ -1,12 +1,18 @@
 if select(5, GetAddOnInfo("PitBull4_" .. (debugstack():match("[o%.][d%.][u%.]les\\(.-)\\") or ""))) ~= "MISSING" then return end
 
+local legion_700 = select(4, GetBuildInfo()) >= 70000
+local _, player_class = UnitClass("player")
+if not legion_700 and player_class ~= "DRUID" then
+	return
+end
+if legion_700 and player_class ~= "DRUID" and player_class ~= "PRIEST" and player_class ~= "SHAMAN" then
+	return
+end
+
 local PitBull4 = _G.PitBull4
 if not PitBull4 then
 	error("PitBull4_AltManaBar requires PitBull4")
 end
-
-local player_class = select(2, UnitClass("player"))
-if not ALT_MANA_BAR_PAIR_DISPLAY_INFO[player_class] then return end
 
 local L = PitBull4.L
 
@@ -14,7 +20,8 @@ local PitBull4_AltManaBar = PitBull4:NewModule("DruidManaBar", "AceEvent-3.0")
 
 PitBull4_AltManaBar:SetModuleType("bar")
 PitBull4_AltManaBar:SetName(L["Alternate mana bar"])
-PitBull4_AltManaBar:SetDescription(L["Show a mana bar for classes that have a different main resource but still use mana for some spells."])
+PitBull4_AltManaBar:SetDescription(L["Show the mana bar for specs that don't use mana as their primary resource."])
+PitBull4_AltManaBar.allow_animations = true
 PitBull4_AltManaBar:SetDefaults({
 	size = 1,
 	position = 6,
@@ -23,16 +30,15 @@ PitBull4_AltManaBar:SetDefaults({
 
 -- constants
 local SPELL_POWER_MANA = _G.SPELL_POWER_MANA
-local SHOULD_DISPLAY = _G.ALT_MANA_BAR_PAIR_DISPLAY_INFO[player_class]
+local DISPLAY_INFO = legion_700 and _G.ALT_MANA_BAR_PAIR_DISPLAY_INFO[player_class]
 
 -- cached power type for optimization
 local power_type = nil
 
 function PitBull4_AltManaBar:OnEnable()
-	PitBull4_AltManaBar:RegisterEvent("UNIT_POWER_FREQUENT")
-	PitBull4_AltManaBar:RegisterEvent("UNIT_MAXPOWER","UNIT_POWER_FREQUENT")
-	PitBull4_AltManaBar:RegisterEvent("UNIT_DISPLAYPOWER","UNIT_POWER_FREQUENT")
-	PitBull4_AltManaBar:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
+	self:RegisterEvent("UNIT_POWER_FREQUENT")
+	self:RegisterEvent("UNIT_MAXPOWER", "UNIT_POWER_FREQUENT")
+	self:RegisterEvent("UNIT_DISPLAYPOWER", "UNIT_POWER_FREQUENT")
 end
 
 function PitBull4_AltManaBar:GetValue(frame)
@@ -53,10 +59,10 @@ function PitBull4_AltManaBar:GetValue(frame)
 	if max == 0 then
 		return nil
 	end
-	
-	if not SHOULD_DISPLAY[power_type] then
+
+	if legion_700 and not DISPLAY_INFO[power_type] then
 		return nil
-	end	
+	end
 
 	local percent = UnitPower("player", SPELL_POWER_MANA) / max
 	if percent == 1 and self:GetLayoutDB(frame).hide_if_full then
@@ -67,8 +73,7 @@ function PitBull4_AltManaBar:GetValue(frame)
 end
 
 function PitBull4_AltManaBar:GetColor(frame, value)
-	local color = PitBull4.PowerColors["MANA"]
-	return color[1], color[2], color[3]
+	return unpack(PitBull4.PowerColors.MANA)
 end
 PitBull4_AltManaBar.GetExampleColor = PitBull4_AltManaBar.GetColor
 
@@ -79,21 +84,10 @@ function PitBull4_AltManaBar:UNIT_POWER_FREQUENT(event, unit, power_type)
 
 	local prev_power_type = power_type
 	power_type = UnitPowerType("player")
-	if power_type == SPELL_POWER_MANA and power_type == prev_power_type then
+	if power_type ~= SPELL_POWER_MANA or power_type ~= prev_power_type then
 		-- We really don't want to iterate all the frames on every mana
-		-- update when the druid is already in a mana form and the bar
-		-- is already hidden.
-		return
-	end
-
-	for frame in PitBull4:IterateFramesForUnitID("player") do
-		self:Update(frame)
-	end
-end
-
-function PitBull4_AltManaBar:PLAYER_SPECIALIZATION_CHANGED(event)
-	for frame in PitBull4:IterateFramesForUnitID("player") do
-		self:Update(frame)
+		-- update when the bar is already hidden.
+		self:UpdateForUnitID("player")
 	end
 end
 
@@ -106,7 +100,7 @@ PitBull4_AltManaBar:SetLayoutOptionsFunction(function(self)
 			return PitBull4.Options.GetLayoutDB(self).hide_if_full
 		end,
 		set = function(info, value)
-			PitBull4.Options.GetLayoutDB(self).hide_if_full = value			
+			PitBull4.Options.GetLayoutDB(self).hide_if_full = value
 			PitBull4.Options.UpdateFrames()
 		end,
 	}
