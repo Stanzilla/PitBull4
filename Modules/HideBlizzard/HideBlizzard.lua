@@ -101,7 +101,6 @@ function hiders:party()
 		local frame = _G["PartyMemberFrame"..i]
 		frame:UnregisterAllEvents()
 		frame:Hide()
-		frame.Show = function() end
 	end
 	
 	UIParent:UnregisterEvent("GROUP_ROSTER_UPDATE")
@@ -110,7 +109,6 @@ end
 function showers:party()
 	for i = 1, 4 do
 		local frame = _G["PartyMemberFrame"..i]
-		frame.Show = nil
 		frame:GetScript("OnLoad")(frame)
 		frame:GetScript("OnEvent")(frame, "GROUP_ROSTER_UPDATE")
 		
