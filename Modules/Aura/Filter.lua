@@ -284,7 +284,7 @@ self_buffs.HUNTER = {
 	[6150]   = true, -- Quick Shots
 	[3045]   = true, -- Rapid Fire
 	[126311] = true, -- Surface Trot
-	[77769]  = true, -- Trap Launcher
+	[77769]  = not legion_700 or nil, -- Trap Launcher
 }
 self_debuffs.HUNTER = {}
 pet_buffs.HUNTER = {
