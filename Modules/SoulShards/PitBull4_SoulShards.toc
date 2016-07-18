@@ -1,4 +1,4 @@
-## Interface: 60200
+## Interface: 70000
 ## Title: PitBull4 |r[|cffeda55fSoul shards|r]
 ## Title-deDE: PitBull4 |r[|cffeda55f@localization(locale="deDE", key="Soul shards")@|r]
 ## Title-esES: PitBull4 |r[|cffeda55f@localization(locale="esES", key="Soul shards")@|r]
@@ -20,6 +20,6 @@
 ## LoadOnDemand: 1
 ## Dependencies: PitBull4
 ## Version: @project-version@
-## X-PitBull4-Condition: return select(2, UnitClass("player")) == "WARLOCK" and PowerBarColor["SOUL_SHARDS"]
+## X-PitBull4-Condition: return select(2, UnitClass("player")) == "WARLOCK"
 
 load.xml

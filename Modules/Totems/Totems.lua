@@ -1,6 +1,6 @@
 if select(5, GetAddOnInfo("PitBull4_" .. (debugstack():match("[o%.][d%.][u%.]les\\(.-)\\") or ""))) ~= "MISSING" then return end
 
-local player_class = select(2,UnitClass('player'))
+local player_class = select(2, UnitClass("player"))
 if player_class ~= "SHAMAN" and player_class ~= "DRUID" and player_class ~= "MONK" and player_class ~= "MAGE" then
 	return
 end
@@ -111,8 +111,6 @@ local type = _G.type
 local GetTotemTimeLeft = _G.GetTotemTimeLeft
 local GetTotemInfo = _G.GetTotemInfo
 -----------------------------------------------------------------------------
-
-
 
 local PitBull4_Totems = PitBull4:NewModule("Totems", "AceEvent-3.0", "AceTimer-3.0")
 local self = PitBull4_Totems
@@ -438,7 +436,7 @@ function PitBull4_Totems:SpiralUpdate(frame,slot,start,left)
 	local startTime = start or select(3, MyGetTotemInfo(slot,frame))
 	local timeLeft = left or MyGetTotemTimeLeft(slot,frame)
 	
-	CooldownFrame_SetTimer(tspiral, startTime, timeLeft, 1)
+	CooldownFrame_Set(tspiral, startTime, timeLeft, 1)
 	if self.totem_is_down[slot] == true and layout_option_get(frame,'timer_spiral') then
 		tspiral:Show()
 	else
@@ -818,7 +816,7 @@ function PitBull4_Totems:BuildFrames(frame)
 		ttf.background = PitBull4.Controls.MakeTexture(ttf, "BACKGROUND")
 	end
 	local bg = ttf.background
-	bg:SetTexture(color_option_get('main_background'))
+	bg:SetColorTexture(color_option_get('main_background'))
 	bg:SetAllPoints(ttf)
 	
 	-- Now create the main timer frames for each totem element
@@ -953,8 +951,8 @@ function PitBull4_Totems:ApplyLayoutSettings(frame)
 	self:ResizeMainFrame(frame)
 	
 	-- Background color of the main frame
-	frame.Totems.background:SetTexture(color_option_get('main_background'))
-	
+	frame.Totems.background:SetColorTexture(color_option_get('main_background'))
+
 	-- Bordercolor of the buttons
 	self:UpdateIconColor(frame)
 
