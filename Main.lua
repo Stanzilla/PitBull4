@@ -1103,7 +1103,7 @@ local upgrade_functions = {
 }
 
 local function check_config_version(sv)
-	if not sv then return end
+	if not sv then return true end
 	local global = sv.global
 	if not global then
 		global = {}
@@ -1129,7 +1129,7 @@ function PitBull4:OnInitialize()
 
 	migrate_to_new_units_db()
 
-	local fresh_config = not PitBull4DB
+	local fresh_config = check_config_version(PitBull4DB)
 
 	db = LibStub("AceDB-3.0"):New("PitBull4DB", DATABASE_DEFAULTS, "Default")
 	self.db = db
@@ -1346,8 +1346,6 @@ local function merge_onto(base, addition)
 end
 
 function PitBull4:OnProfileChanged()
-	local db = self.db
-
 	self.ClassColors = db.profile.colors.class
 	self.PowerColors = db.profile.colors.power
 	self.ReactionColors = db.profile.colors.reaction
@@ -1444,16 +1442,10 @@ function PitBull4:OnProfileChanged()
 	end
 
 	self:RecheckConfigMode()
-	
-	if db_icon_done then
-		local LibDBIcon = LibStub("LibDBIcon-1.0")
-		local minimap_icon_db = db.profile.minimap_icon
-		LibDBIcon:Refresh("PitBull4", minimap_icon_db)
-		if minimap_icon_db.hide then
-			LibDBIcon:Hide("PitBull4")
-		else
-			LibDBIcon:Show("PitBull4")
-		end
+
+	local LibDBIcon = LibStub("LibDBIcon-1.0", true)
+	if LibDBIcon then
+		LibDBIcon:Refresh("PitBull4", db.profile.minimap_icon)
 	end
 end
 
