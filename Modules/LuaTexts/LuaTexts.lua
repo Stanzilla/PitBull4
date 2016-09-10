@@ -496,7 +496,7 @@ return ConfigMode()]],
 	},
 	[L["Combo points"]] = {
 		[L["Standard"]] = {
-			events = {['UNIT_COMBO_POINTS']=true},
+			events = {['UNIT_POWER']=true},
 			code = [[
 local combos = Combos()
 if combos ~= 0 then
@@ -625,7 +625,6 @@ do
 		['UNIT_PET_EXPERIENCE'] = {pet=true},
 		['PLAYER_XP_UPDATE'] = {player=true},
 		['ARTIFACT_XP_UPDATE'] = {player=true},
-		['UNIT_COMBO_POINTS'] = {all=true},
 		['UPDATE_FACTION'] = {all=true},
 		['UNIT_LEVEL'] = {all=true},
 
@@ -707,6 +706,7 @@ compat_event_map.UNIT_RUNIC_POWER = 'UNIT_POWER_FREQUENT'
 compat_event_map.UNIT_MAXRUNIC_POWER = 'UNIT_POWER_FREQUENT'
 compat_event_map.PARTY_MEMBERS_CHANGED = 'GROUP_ROSTER_UPDATE'
 compat_event_map.RAID_ROSTER_UPDATE = 'GROUP_ROSTER_UPDATE'
+compat_event_map.UNIT_COMBO_POINTS = 'UNIT_POWER'
 
 local timerframe = CreateFrame("Frame")
 PitBull4_LuaTexts.timerframe = timerframe
@@ -906,6 +906,8 @@ function PitBull4_LuaTexts:UNIT_SPELLCAST_SENT(event, unit, spell, rank, target)
 	next_spell = spell
 	next_rank = rank and tonumber(rank:match("%d+"))
 	next_target = target ~= "" and target or nil
+
+	self:OnEvent(event, unit, spell, rank, target)
 end
 
 local pool = setmetatable({}, {__mode='k'})
@@ -1175,6 +1177,8 @@ function PitBull4_LuaTexts:GROUP_ROSTER_UPDATE(event)
 		end
 	end
 	wipe(tmp)
+
+	self:OnEvent(event)
 end
 
 function PitBull4_LuaTexts:OnEvent(event, unit, ...)
@@ -1197,7 +1201,7 @@ function PitBull4_LuaTexts:OnEvent(event, unit, ...)
 
 	if event == "PLAYER_FLAGS_CHANGED" then
 		update_timers()
-	elseif string.sub(event,1,15) == "UNIT_SPELLCAST_" then
+	elseif string.sub(event,1,15) == "UNIT_SPELLCAST_" and event ~= "UNIT_SPELLCAST_SENT" then
 		-- spell casting events need to go through
 		update_cast_data(event, unit, ...)
 	end
@@ -1385,7 +1389,9 @@ local function event_cache_insert(event, font_string)
 	if not event_entry then
 		event_entry = {}
 		event_cache[event] = event_entry
-		PitBull4_LuaTexts:RegisterEvent(event,"OnEvent")
+		if not protected_events[event] then
+			PitBull4_LuaTexts:RegisterEvent(event,"OnEvent")
+		end
 	end
 	event_entry[font_string] = true
 end
