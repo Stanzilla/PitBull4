@@ -39,10 +39,12 @@ local guids_to_update = {}
 
 function PitBull4_HealthBar:OnEnable()
 	timerFrame:Show()
-	
+
 	self:RegisterEvent("UNIT_HEALTH_FREQUENT")
-	self:RegisterEvent("UNIT_MAXHEALTH","UNIT_HEALTH_FREQUENT")
-	self:RegisterEvent("PLAYER_ALIVE")	
+	self:RegisterEvent("UNIT_MAXHEALTH", "UNIT_HEALTH_FREQUENT")
+	self:RegisterEvent("UNIT_CONNECTION", "UNIT_HEALTH_FREQUENT")
+	self:RegisterEvent("PLAYER_ALIVE")
+	self:RegisterEvent("PLAYER_TARGET_CHAGED")
 
 	self:UpdateAll()
 end
@@ -52,11 +54,11 @@ function PitBull4_HealthBar:OnDisable()
 end
 
 timerFrame:SetScript("OnUpdate", function()
-	for guid in pairs(guids_to_update) do	
+	for guid in pairs(guids_to_update) do
 		for frame in PitBull4:IterateFramesForGUID(guid) do
 			PitBull4_HealthBar:Update(frame)
 		end
-	end	
+	end
 	wipe(guids_to_update)
 end)
 
@@ -100,9 +102,9 @@ function PitBull4_HealthBar:GetColor(frame, value)
 		low_r, low_g, low_b = unpack(colors.half_health)
 		normalized_value = value * 2 - 1
 	end
-	
+
 	local inverse_value = 1 - normalized_value
-	
+
 	return
 		low_r * inverse_value + high_r * normalized_value,
 		low_g * inverse_value + high_g * normalized_value,
@@ -121,6 +123,13 @@ end
 
 function PitBull4_HealthBar:PLAYER_ALIVE(event)
 	guids_to_update[UnitGUID("player")] = true
+end
+
+function PitBull4_HealthBar:PLAYER_TARGET_CHANGED()
+	local guid = UnitGUID("target")
+	if guid then
+		guids_to_update[guid] = true
+	end
 end
 
 PitBull4_HealthBar:SetColorOptionsFunction(function(self)
@@ -170,19 +179,19 @@ PitBull4_HealthBar:SetColorOptionsFunction(function(self)
 	function(info)
 		local color = self.db.profile.global.colors.dead
 		color[1], color[2], color[3] = 0.6, 0.6, 0.6
-		
+
 		local color = self.db.profile.global.colors.disconnected
 		color[1], color[2], color[3] = 0.7, 0.7, 0.7
-		
+
 		local color = self.db.profile.global.colors.tapped
 		color[1], color[2], color[3] = 0.5, 0.5, 0.5
-		
+
 		local color = self.db.profile.global.colors.max_health
 		color[1], color[2], color[3] = 0, 1, 0
-		
+
 		local color = self.db.profile.global.colors.half_health
 		color[1], color[2], color[3] = 1, 1, 0
-		
+
 		local color = self.db.profile.global.colors.min_health
 		color[1], color[2], color[3] = 1, 0, 0
 	end
